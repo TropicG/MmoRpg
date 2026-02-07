@@ -3,6 +3,7 @@ package server;
 import model.world.World;
 import server.command.CommandExecutor;
 import server.connection.EstablishedPlayerConnection;
+import server.connection.WorldMapChangeInformant;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -13,13 +14,18 @@ import java.util.concurrent.Executors;
 public class MmoRpgServer {
     private static int SERVER_PORT = 8080;
     private static boolean isServerRuning = true;
+    private static int MAX_ACTIVE_CLIENTS = 9;
 
     private static final World world = World.getInstance();
     private static int connectedPlayers = 0;
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-             ExecutorService executor = Executors.newFixedThreadPool(9)) {
+             ExecutorService executor = Executors.newFixedThreadPool(MAX_ACTIVE_CLIENTS);
+             ExecutorService executorVirtual = Executors.newVirtualThreadPerTaskExecutor()) {
+
+            WorldMapChangeInformant worldMapChangeInformant = new WorldMapChangeInformant(world, isServerRuning);
+            executorVirtual.execute(worldMapChangeInformant);
 
             while (isServerRuning) {
                 listenForNewPlayers(serverSocket, executor);
@@ -39,11 +45,9 @@ public class MmoRpgServer {
                 connectedPlayers++;
                 runThreadForPlayConnection(playerSocket, executor);
                 worldAcceptNewPlayer(playerSocket);
-                System.out.println("New client connected");
             }
         } catch (IOException e) {
             System.out.println("PROBLEMS WHEN ACCEPTING A PLAYER IN THE SERVER");
-            System.out.println(e.getMessage());
             //TODO: Inform the player with log files that something happened to his computer
         }
     }
