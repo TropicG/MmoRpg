@@ -3,7 +3,6 @@ package server;
 import model.world.World;
 import server.command.CommandExecutor;
 import server.connection.EstablishedPlayerConnection;
-import server.connection.WorldMapChangeInformant;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -21,11 +20,7 @@ public class MmoRpgServer {
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT);
-             ExecutorService executor = Executors.newFixedThreadPool(MAX_ACTIVE_CLIENTS);
-             ExecutorService executorVirtual = Executors.newVirtualThreadPerTaskExecutor()) {
-
-            WorldMapChangeInformant worldMapChangeInformant = new WorldMapChangeInformant(world, isServerRuning);
-            executorVirtual.execute(worldMapChangeInformant);
+             ExecutorService executor = Executors.newFixedThreadPool(MAX_ACTIVE_CLIENTS)) {
 
             while (isServerRuning) {
                 listenForNewPlayers(serverSocket, executor);

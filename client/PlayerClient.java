@@ -22,6 +22,7 @@ public class PlayerClient {
             Scanner sIn = new Scanner(System.in);
             ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
 
+            // executes a thread which job is going to be responsible for listening for the World input
             WorldMapListener worldMapListener = new WorldMapListener(in);
             executorService.execute(worldMapListener);
 

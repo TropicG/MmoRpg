@@ -6,9 +6,9 @@ import model.world.manager.PlayerConnectionManager;
 import model.world.manager.PlayerModelManager;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -17,19 +17,14 @@ public class World {
     private static final int MAX_COLUMNS = 10;
     private static final String EMPTY_SPACE = ".";
 
-    private final String[][] worldMap;
-    private Set<String> possiblePlayerIds;
+    private static final World world = new World();
 
-    private volatile boolean mapChanged;
-
-    //private final List<List<String>> worldMap;
     private final PlayerModelManager playerModelManager;
     private final PlayerConnectionManager playerConnectionManager;
-    private static final World world = new World();
-    //TODO: The world will have access to every Player's model, e.g. Map<Integer, Player> or PlayerModelManager
-    //TODO: The map will have access to every Player's socket to communicate with him, e.g. Map<Integer, Socket> or CommunicationManager
-
+    private final String[][] worldMap;
+    private Set<String> possiblePlayerIds;
     private final Object movingMonitor = new Object();
+
 
     private World() {
         // Initializing the world
@@ -47,14 +42,14 @@ public class World {
         playerConnectionManager = new PlayerConnectionManager();
 
         possiblePlayerIds = Set.of("1", "2", "3", "4", "5", "6", "7", "8", "9");
-        mapChanged = false;
     }
 
     public static World getInstance() {
         return world;
     }
 
-    public void movePlayerInDirection(int playerId, Direction direction) throws IOException {
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR MOVING A SPECIFIC PLAYER
+    public void movePlayerInDirection(int playerId, Direction direction) {
         Player player = playerModelManager.getPlayer(playerId);
         int newX = player.getXPos();
         int newY = player.getYPos();
@@ -67,9 +62,10 @@ public class World {
         }
 
         synchronized (movingMonitor) {
+            System.out.println("Moving to direction " + direction.toString());
             boolean isValidPosition = isValidPlayerPosition(newX, newY);
             if (isValidPosition) {
-                // saving the old location
+                // changes the current tile the player is on, either leave it * or check if there is another player on the tile
                 updateCurrentLoc(String.valueOf(playerId), player.getXPos(), player.getYPos());
                 playerModelManager.updatePlayerPosition(playerId, newX, newY); // updating the player new location
                 changePlayerLocation(playerId, newX, newY); // actual change of the player location
@@ -78,39 +74,39 @@ public class World {
     }
 
     // TODO: The player cannot go to a place with 2 players or 1 player and 1 Minion
-    private boolean isValidPlayerPosition(int playerX, int playerY) {
-        return ((playerX >= 0 && playerX < MAX_ROWS) && (playerY >= 0 && playerY < MAX_COLUMNS)) &&
-                (worldMap[playerX][playerY].length() != 2);
+    private boolean isValidPlayerPosition(int newX, int newY) {
+        return ((newX >= 0 && newX < MAX_ROWS) && (newY >= 0 && newY < MAX_COLUMNS)) &&
+                (worldMap[newX][newY].length() != 2);
     }
 
-    private boolean hasTileAnotherPlayer(int playerXPos, int playerYPos) {
-        return possiblePlayerIds.contains(worldMap[playerXPos][playerYPos]);
+    private boolean hasTileAnotherPlayer(int newX, int newY) {
+        return possiblePlayerIds.contains(worldMap[newX][newY]);
     }
 
-    private void updateCurrentLoc(String playerId, int playerXPos, int playerYPos) {
+    private void updateCurrentLoc(String playerId, int playerX, int playerY) {
         // if the current location has two characters on the tile
-        if(worldMap[playerXPos][playerYPos].length() == 2) {
-            worldMap[playerXPos][playerYPos] = worldMap[playerXPos][playerYPos].replaceFirst(playerId,"");
+        if (worldMap[playerX][playerY].length() == 2) {
+            worldMap[playerX][playerY] = worldMap[playerX][playerY].replaceFirst(playerId, "");
         } else {
-            worldMap[playerXPos][playerYPos] = EMPTY_SPACE;
+            worldMap[playerX][playerY] = EMPTY_SPACE;
         }
     }
 
     //TODO: Create a logic if there is another player
-    public void changePlayerLocation(int id, int playerXPos, int playerYPos) throws IOException {
-        if (hasTileAnotherPlayer(playerXPos, playerYPos)) {
+    public void changePlayerLocation(int id, int newX, int newY) {
+        if (hasTileAnotherPlayer(newX, newY)) {
             // if there was another player here, the tile will hold the two players
-            worldMap[playerXPos][playerYPos] = worldMap[playerXPos][playerYPos] + id;
+            worldMap[newX][newY] = worldMap[newX][newY] + id;
         } else {
             // if the tile that the player has to move is empty
-            worldMap[playerXPos][playerYPos] = "" + id;
+            worldMap[newX][newY] = "" + id;
         }
 
-        setMapChanged(true);
-        //sendMapToAll();
+        sendMapToAll();
     }
 
-    public void acceptNewPlayer(Socket socketForPlayer, int playerId) throws IOException {
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR SPAWNING A NEW PLAYER ON THE MAP
+    public void acceptNewPlayer(Socket socketForPlayer, int playerId) {
 
         synchronized (movingMonitor) {
             List<Integer> positionToStart = calculateBestPosition();
@@ -121,6 +117,8 @@ public class World {
             playerConnectionManager.addNewPlayerConnection(playerId, socketForPlayer);
             changePlayerLocation(playerId, player.getXPos(), player.getYPos());
         }
+
+        informPlayer(playerId, "Welcome to the server player: " + playerId + "\n");
 
         //TODO: Create new player
         //TODO: Assign the new player a location
@@ -142,6 +140,19 @@ public class World {
         return List.of();
     }
 
+    //THESE FUNCTIONS ARE GOING TO BE RESPONSIBLE FOR INFORMING THE PLAYER
+    public void informPlayer(int playerId, String message) {
+        Socket playerSocket = playerConnectionManager.getPlayerSocket(playerId);
+
+        try {
+            playerSocket.getOutputStream().write(message.getBytes(StandardCharsets.UTF_8));
+            playerSocket.getOutputStream().flush();
+        } catch (IOException e) {
+            System.out.println("Problems when informing the player");
+            //TODO: Creating a file on the server side file with lgos
+        }
+    }
+
     // The world map will be transformed to String so that It can be send to all the clients
     @Override
     public String toString() {
@@ -159,18 +170,16 @@ public class World {
 
     // the worldMap is sending information to all its player
     // TODO: Create a thread that will run on the server side that will check if the world map has new information so that it sends data to the clients
-    public void sendMapToAll() throws IOException {
+    public void sendMapToAll() {
         for (var playerSocket : playerConnectionManager.getActivePlayersConnections().values()) {
-            playerSocket.getOutputStream().write(toString().getBytes(StandardCharsets.UTF_8));
+            try {
+                playerSocket.getOutputStream().write(toString().getBytes(StandardCharsets.UTF_8));
+                playerSocket.getOutputStream().flush();
+            } catch (IOException ioException) {
+                System.out.println("Problem when sending the world map to the client");
+                //TODO: Make the logs file on the server side
+            }
         }
-    }
-
-    public void setMapChanged(boolean mapChanged) {
-        this.mapChanged = mapChanged;
-    }
-
-    public boolean isMapChanged() {
-        return this.mapChanged;
     }
 
     public PlayerConnectionManager getPlayerConnectionManager() {

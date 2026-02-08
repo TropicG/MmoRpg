@@ -20,4 +20,8 @@ public class PlayerConnectionManager {
     public Map<Integer, Socket> getActivePlayersConnections() {
         return activePlayersConnections;
     }
+
+    public Socket getPlayerSocket(int playerId) {
+        return activePlayersConnections.get(playerId);
+    }
 }

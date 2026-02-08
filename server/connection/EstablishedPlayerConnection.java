@@ -1,12 +1,10 @@
 package server.connection;
 
-import model.world.World;
 import server.command.CommandExecutor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Socket;
 
 public class EstablishedPlayerConnection implements Runnable {
@@ -26,18 +24,19 @@ public class EstablishedPlayerConnection implements Runnable {
     @Override
     public void run() {
         try(BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             clientSocket)  {
 
             while(isConnectionActive) {
                 String playerRequest;
                 while((playerRequest = in.readLine()) != null) {
+                    System.out.println("Took player command: " + playerRequest);
                     commandExecutor.executeRequest(playerRequest);
                 }
             }
 
         } catch (IOException e) {
             System.out.println("Problems when communicating with the clinet");
+            System.out.println(e.getMessage());
             //TODO: Save this information in a file
         }
     }
