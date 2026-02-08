@@ -153,6 +153,10 @@ public class World {
         }
     }
 
+    public void messagePlayer(int fromPlayerId, int toPlayeId, String message){
+        informPlayer(toPlayeId, message);
+    }
+
     // The world map will be transformed to String so that It can be send to all the clients
     @Override
     public String toString() {

@@ -40,6 +40,4 @@ public class EstablishedPlayerConnection implements Runnable {
             //TODO: Save this information in a file
         }
     }
-
-
 }
