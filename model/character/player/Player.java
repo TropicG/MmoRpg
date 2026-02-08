@@ -44,4 +44,16 @@ public class Player extends Actor {
     public Backpack getBackpack() {
         return backpack;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder playerStats = new StringBuilder();
+
+        playerStats.append("HP: ").append(super.getHealth()).append(", Mana: ").append(super.getMana()).append(", ");
+        playerStats.append("Dmg: ").append(super.getDamage()).append(", Def: ")
+                .append(super.getDefense()).append(", Lvl: ").append(super.getCurrentLevel());
+        playerStats.append("\n");
+
+        return playerStats.toString();
+    }
 }

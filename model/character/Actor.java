@@ -7,6 +7,7 @@ public abstract class Actor {
     private int damage;
     private int defense;
     private int currentLevel;
+
     private int xPos;
     private int yPos;
 
@@ -19,6 +20,26 @@ public abstract class Actor {
         this.currentLevel = currentLevel;
         this.xPos = xPos;
         this.yPos = yPos;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    public int getMana() {
+        return mana;
+    }
+
+    public int getDamage() {
+        return damage;
+    }
+
+    public int getDefense() {
+        return defense;
+    }
+
+    public int getCurrentLevel() {
+        return currentLevel;
     }
 
     public int getXPos() {

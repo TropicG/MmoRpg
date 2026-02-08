@@ -23,6 +23,7 @@ public class CommandExecutor {
     private static final String rightCommand = "right";
     private static final String msgCommand = "msg";
     private static final String invCommand = "inv";
+    private static final String statsCommand = "stats";
 
     private static final World world = World.getInstance();
 
@@ -36,6 +37,7 @@ public class CommandExecutor {
            case rightCommand -> world.movePlayerInDirection(playerId, Direction.RIGHT);
            case msgCommand -> messagePlayer(playerId, request, arguments);
            case invCommand -> world.showInventoryToPlayer(playerId);
+            case statsCommand -> world.showPlayerStats(playerId);
         }
     }
 

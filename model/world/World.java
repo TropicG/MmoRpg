@@ -21,8 +21,8 @@ public class World {
     private static final String EMPTY_SPACE = ".";
     private static final String TREASURE_SPACE = "*";
 
-    private static final double PERCENTAGE_FOR_BLOCKAGE = 0.14;
-    private static final double PERCENTAGE_FOR_TREASURE = 0.08;
+    private static final double PERCENTAGE_FOR_BLOCKAGE = 0.15;
+    private static final double PERCENTAGE_FOR_TREASURE = 0.15;
 
     private static final World world = new World();
 
@@ -37,8 +37,6 @@ public class World {
 
     // Functions for initializing the World
     private World() {
-
-
         // Initializing the world
         worldMap = new String[MAX_ROWS][MAX_COLUMNS];
         for (int i = 0; i < MAX_ROWS; i++) {
@@ -74,7 +72,6 @@ public class World {
     private boolean canPlaceTreasure() {
         return Math.random() < PERCENTAGE_FOR_TREASURE;
     }
-
 
     public static World getInstance() {
         return world;
@@ -196,6 +193,12 @@ public class World {
             }
         }
         return List.of();
+    }
+
+    // THESE FUNCTIONS are responsible to show this person's stats
+    public void showPlayerStats(int playerID) {
+        Player player = playerModelManager.getPlayer(playerID);
+        informPlayer(playerID, player.toString());
     }
 
     //THESE FUNCTIONS ARE GOING TO BE RESPONSIBLE FOR INFORMING THE PLAYER
