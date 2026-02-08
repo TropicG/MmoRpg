@@ -1,12 +1,13 @@
 package model.world;
 
 import model.character.player.Player;
+import model.treasure.Treasure;
 import model.world.direction.Direction;
 import model.world.manager.PlayerConnectionManager;
 import model.world.manager.PlayerModelManager;
+import model.world.manager.TreasureManager;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -15,28 +16,49 @@ import java.util.Set;
 public class World {
     private static final int MAX_ROWS = 10;
     private static final int MAX_COLUMNS = 10;
+
+    private static final String BLOCKAGE_SPACE = "#";
     private static final String EMPTY_SPACE = ".";
+    private static final String TREASURE_SPACE = "*";
+
+    private static final double PERCENTAGE_FOR_BLOCKAGE = 0.14;
+    private static final double PERCENTAGE_FOR_TREASURE = 0.08;
 
     private static final World world = new World();
 
+    //managers
     private final PlayerModelManager playerModelManager;
     private final PlayerConnectionManager playerConnectionManager;
+    private final TreasureManager treasureManager;
+
     private final String[][] worldMap;
-    private Set<String> possiblePlayerIds;
+    private final Set<String> possiblePlayerIds;
     private final Object movingMonitor = new Object();
 
-
+    // Functions for initializing the World
     private World() {
+
+
         // Initializing the world
         worldMap = new String[MAX_ROWS][MAX_COLUMNS];
         for (int i = 0; i < MAX_ROWS; i++) {
             for (int j = 0; j < MAX_COLUMNS; j++) {
-                worldMap[i][j] = EMPTY_SPACE;
+                if (canPlaceBlockage()) {
+                    worldMap[i][j] = BLOCKAGE_SPACE;
+                } else if (canPlaceTreasure()) {
+                    worldMap[i][j] = TREASURE_SPACE;
+                }
+                else {
+                    worldMap[i][j] = EMPTY_SPACE;
+                }
             }
         }
 
         // initilizing the player's model
         playerModelManager = new PlayerModelManager();
+
+        // initializing the treasureManager
+        treasureManager = new TreasureManager();
 
         // initializing the player's connection manager
         playerConnectionManager = new PlayerConnectionManager();
@@ -44,16 +66,28 @@ public class World {
         possiblePlayerIds = Set.of("1", "2", "3", "4", "5", "6", "7", "8", "9");
     }
 
+    // there is a percent chance that a blockage is spawned to the worldMap
+    private boolean canPlaceBlockage() {
+        return Math.random() < PERCENTAGE_FOR_BLOCKAGE;
+    }
+
+    private boolean canPlaceTreasure() {
+        return Math.random() < PERCENTAGE_FOR_TREASURE;
+    }
+
+
     public static World getInstance() {
         return world;
     }
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR MOVING A SPECIFIC PLAYER
     public void movePlayerInDirection(int playerId, Direction direction) {
+        // gets the player that shall be moved
         Player player = playerModelManager.getPlayer(playerId);
         int newX = player.getXPos();
         int newY = player.getYPos();
 
+        // calculating the new change to the position
         switch (direction) {
             case UP -> newX -= 1;
             case DOWN -> newX += 1;
@@ -61,10 +95,17 @@ public class World {
             case RIGHT -> newY += 1;
         }
 
+        // thread-safe: only one player connection can change the map at a time
         synchronized (movingMonitor) {
-            System.out.println("Moving to direction " + direction.toString());
             boolean isValidPosition = isValidPlayerPosition(newX, newY);
             if (isValidPosition) {
+
+                if(isThereTreasure(newX, newY)) {
+                    Treasure treasure = treasureManager.getRandomTreasure();
+                    playerModelManager.addTreasureToPlayer(playerId, treasure);
+                    informPlayer(playerId, "You have received " + treasure.getTreasureName() + "\n");
+                }
+
                 // changes the current tile the player is on, either leave it * or check if there is another player on the tile
                 updateCurrentLoc(String.valueOf(playerId), player.getXPos(), player.getYPos());
                 playerModelManager.updatePlayerPosition(playerId, newX, newY); // updating the player new location
@@ -75,8 +116,19 @@ public class World {
 
     // TODO: The player cannot go to a place with 2 players or 1 player and 1 Minion
     private boolean isValidPlayerPosition(int newX, int newY) {
-        return ((newX >= 0 && newX < MAX_ROWS) && (newY >= 0 && newY < MAX_COLUMNS)) &&
-                (worldMap[newX][newY].length() != 2);
+        return isInsideBound(newX,newY) && (worldMap[newX][newY].length() != 2) && !isThereBlockage(newX,newY);
+    }
+
+    private boolean isThereTreasure(int x, int y){
+        return worldMap[x][y].equals(TREASURE_SPACE);
+    }
+
+    private boolean isThereBlockage(int x, int y){
+        return worldMap[x][y].equals(BLOCKAGE_SPACE);
+    }
+
+    private boolean isInsideBound(int x, int y) {
+        return ((x >= 0 && x < MAX_ROWS) && (y >= 0 && y < MAX_COLUMNS));
     }
 
     private boolean hasTileAnotherPlayer(int newX, int newY) {
@@ -105,14 +157,19 @@ public class World {
         sendMapToAll();
     }
 
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR WRITING THE INVENTORY TO THE CLIENT
+    public void showInventoryToPlayer(int playerId) {
+        Player player = playerModelManager.getPlayer(playerId);
+        informPlayer(playerId, player.getBackpack().toString());
+    }
+
+
     // THESE FUNCTIONS ARE RESPONSIBLE FOR SPAWNING A NEW PLAYER ON THE MAP
     public void acceptNewPlayer(Socket socketForPlayer, int playerId) {
 
         synchronized (movingMonitor) {
             List<Integer> positionToStart = calculateBestPosition();
-            Player player = new Player(
-                    Player.STARTING_PLAYER_HEALTH, Player.STARTING_PLAYER_MANA, Player.STARTING_PLAYER_DAMAGE, Player.STARTING_PLAYER_DEFENSE,
-                    Player.PLAYER_STARTING_LEVEL, playerId, positionToStart.getFirst(), positionToStart.getLast());
+            Player player = new Player(playerId, positionToStart.getFirst(), positionToStart.getLast());
             playerModelManager.addNewPlayerModel(playerId, player);
             playerConnectionManager.addNewPlayerConnection(playerId, socketForPlayer);
             changePlayerLocation(playerId, player.getXPos(), player.getYPos());
@@ -129,7 +186,8 @@ public class World {
 
     //TODO: If currently there are no possible place to place the client, inform him
     //TODO: In the future add logic that will calculate location for the player on a position where no enemies are in the 4 directions
-    public List<Integer> calculateBestPosition() {
+    //TODO: Make a logic so that the player is not blocked from all sides
+    private List<Integer> calculateBestPosition() {
         for (int i = 0; i < MAX_ROWS; i++) {
             for (int j = 0; j < MAX_COLUMNS; j++) {
                 if (worldMap[i][j].equals(EMPTY_SPACE)) {
@@ -153,7 +211,7 @@ public class World {
         }
     }
 
-    public void messagePlayer(int fromPlayerId, int toPlayeId, String message){
+    public void messagePlayer(int fromPlayerId, int toPlayeId, String message) {
         informPlayer(toPlayeId, message);
     }
 

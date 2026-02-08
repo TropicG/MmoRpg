@@ -1,0 +1,12 @@
+package model.treasure.weapon.player;
+
+import model.treasure.weapon.Weapon;
+
+public final class MasterSword extends Weapon {
+    private static final int ATTACK_DMG = 7;
+    private static final int LEVEL_REQ = 4;
+
+    public MasterSword() {
+        super(ATTACK_DMG, LEVEL_REQ, "MasterSword");
+    }
+}

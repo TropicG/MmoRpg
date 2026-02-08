@@ -1,7 +1,6 @@
 package server;
 
 import model.world.World;
-import server.command.CommandExecutor;
 import server.connection.EstablishedPlayerConnection;
 
 import java.io.IOException;
@@ -16,6 +15,7 @@ public class MmoRpgServer {
     private static int MAX_ACTIVE_CLIENTS = 9;
 
     private static final World world = World.getInstance();
+
     private static int connectedPlayers = 0;
 
     public static void main(String[] args) {
@@ -52,8 +52,7 @@ public class MmoRpgServer {
     }
 
     private static void runThreadForPlayConnection(Socket playerSocket, ExecutorService executor) {
-        CommandExecutor commandExecutor = new CommandExecutor(world, connectedPlayers);
-        EstablishedPlayerConnection playerConnection = new EstablishedPlayerConnection(commandExecutor, playerSocket, connectedPlayers);
+        EstablishedPlayerConnection playerConnection = new EstablishedPlayerConnection(playerSocket, connectedPlayers);
         executor.execute(playerConnection);
     }
 }

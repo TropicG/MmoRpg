@@ -9,13 +9,11 @@ import java.net.Socket;
 
 public class EstablishedPlayerConnection implements Runnable {
 
-    private final CommandExecutor commandExecutor;
     private final Socket clientSocket;
     private boolean isConnectionActive;
     private final int playerId;
 
-    public EstablishedPlayerConnection(CommandExecutor commandExecutor, Socket clientSocket, int playerId) {
-        this.commandExecutor = commandExecutor;
+    public EstablishedPlayerConnection(Socket clientSocket, int playerId) {
         this.clientSocket = clientSocket;
         this.playerId = playerId;
         this.isConnectionActive = true;
@@ -29,8 +27,7 @@ public class EstablishedPlayerConnection implements Runnable {
             while(isConnectionActive) {
                 String playerRequest;
                 while((playerRequest = in.readLine()) != null) {
-                    System.out.println("Took player command: " + playerRequest);
-                    commandExecutor.executeRequest(playerRequest);
+                    CommandExecutor.executeRequest(playerId,playerRequest);
                 }
             }
 
