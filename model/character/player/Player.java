@@ -5,8 +5,6 @@ import model.character.player.storage.Backpack;
 import model.treasure.Treasure;
 import model.treasure.weapon.Weapon;
 
-import java.util.List;
-
 public class Player extends Actor {
     private static int PLAYER_STARTING_LEVEL = 1;
     private static int STARTING_PLAYER_HEALTH = 20;
@@ -22,6 +20,8 @@ public class Player extends Actor {
     private final int playerId;
     private final Backpack backpack;
 
+    private Weapon equipedWeapon;
+
     //TODO: Change the names of the parameters for the player location
     public Player(int playerId, int x, int y) {
         super(STARTING_PLAYER_HEALTH,
@@ -33,6 +33,7 @@ public class Player extends Actor {
 
         this.playerId = playerId;
         this.backpack = new Backpack();
+        equipedWeapon = null;
     }
 
     public void addTreasure(Treasure treasure) {
@@ -53,6 +54,14 @@ public class Player extends Actor {
 
     public boolean isBackpackEmpty() {
         return backpack.isBackpackEmpty();
+    }
+
+    public Weapon getEquipedWeapon() {
+        return equipedWeapon;
+    }
+
+    public void equipWeapon(Weapon weapon) {
+        this.equipedWeapon = weapon;
     }
 
     public Backpack getBackpack() {

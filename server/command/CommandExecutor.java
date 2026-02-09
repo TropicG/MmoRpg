@@ -2,6 +2,7 @@ package server.command;
 
 import model.treasure.Treasure;
 import model.treasure.TreasureFactory;
+import model.treasure.weapon.Weapon;
 import model.world.World;
 import model.world.direction.Direction;
 
@@ -12,6 +13,7 @@ import java.io.IOException;
 public class CommandExecutor {
     // argument placement
     private static int COMMAND_ARG = 0;
+    private static int TREASURE_NAME_EQUIP_ARG = 1;
     private static int TREASURE_NAME_DROP_ARG = 1;
     private static int OTHER_PLAYER_ID_ARG = 1;
     private static final int TREASURE_NAME_ARG = 2;
@@ -30,6 +32,7 @@ public class CommandExecutor {
     private static final String statsCommand = "stats";
     private static final String giveCommand = "give";
     private static final String dropCommand = "drop";
+    private static final String equipCommand = "eq";
 
     private static final World world = World.getInstance();
 
@@ -46,7 +49,13 @@ public class CommandExecutor {
             case statsCommand -> world.showPlayerStats(playerId);
             case giveCommand -> giveItemToPlayer(playerId, arguments);
             case dropCommand -> dropTreasureFromPlayer(playerId, arguments[TREASURE_NAME_DROP_ARG]);
+            case equipCommand -> equipWeaponToPlayer(playerId, arguments[TREASURE_NAME_EQUIP_ARG]);
         }
+    }
+
+    private static void equipWeaponToPlayer(int playerId, String weaponName) {
+        Weapon weapon = TreasureFactory.ofWeapon(weaponName);
+        world.equipWeaponToPlayer(playerId, weapon);
     }
 
     private static void dropTreasureFromPlayer(int playerId, String treasureName){

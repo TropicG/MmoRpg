@@ -2,6 +2,7 @@ package model.world;
 
 import model.character.player.Player;
 import model.treasure.Treasure;
+import model.treasure.weapon.Weapon;
 import model.world.direction.Direction;
 import model.world.manager.PlayerConnectionManager;
 import model.world.manager.PlayerModelManager;
@@ -82,6 +83,20 @@ public class World {
         return world;
     }
 
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR EQUIPPING A WEAPON TO THE PLAYER
+    public void equipWeaponToPlayer(int playerId, Weapon weapon) {
+        synchronized (playerModelManagerMonitor) {
+            // TODO: Decide must there be a monitor for equipping a weapon
+            Player player = playerModelManager.getPlayer(playerId);
+
+            if(!player.hasTreasure(weapon)) {
+                informPlayer(playerId, "This item is not in the backpack\n");
+            } else {
+                player.equipWeapon(weapon);
+                informPlayer(playerId, "Equiped " + weapon.getTreasureName() + "\n");
+            }
+        }
+    }
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR DROPPING A TREASURE ON THE MAP
     public void dropTreasureFromPlayer(int playerId, Treasure treasure) {
