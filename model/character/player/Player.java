@@ -14,8 +14,6 @@ public class Player extends Actor {
     private static int STARTING_PLAYER_DAMAGE = 5;
     private static int STARTING_PLAYER_DEFENSE = 3;
 
-    public static int BACKPACK_CAPACITY = 10;
-
     //TODO: Generate a Builder pattern
     //TODO: Creating a Backpack
     //TODO: Creating a Container for Spells
@@ -39,6 +37,22 @@ public class Player extends Actor {
 
     public void addTreasure(Treasure treasure) {
         backpack.addTreasure(treasure);
+    }
+
+    public void removeTreasure(Treasure treasure){
+        backpack.removeTreasure(treasure);
+    }
+
+    public boolean hasTreasure(Treasure treasure) {
+        return backpack.hasTreasure(treasure);
+    }
+
+    public boolean isBackpackFull() {
+        return backpack.isBackpackFull();
+    }
+
+    public boolean isBackpackEmpty() {
+        return backpack.isBackpackEmpty();
     }
 
     public Backpack getBackpack() {

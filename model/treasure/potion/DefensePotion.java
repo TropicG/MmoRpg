@@ -1,10 +1,12 @@
 package model.treasure.potion;
 
+import model.treasure.TreasureFactory;
+
 public class DefensePotion extends Potion {
     private static final int DEFENSE_POINTS = 5;
 
     public DefensePotion() {
-        super(DEFENSE_POINTS, "DefensePotion");
+        super(DEFENSE_POINTS, TreasureFactory.DEFENSE_POTION);
     }
 
     @Override

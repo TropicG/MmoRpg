@@ -1,10 +1,12 @@
 package model.treasure.potion;
 
+import model.treasure.TreasureFactory;
+
 public class ManaPotion extends Potion {
     private static final int MANA_POINTS = 10;
 
     public ManaPotion() {
-        super(MANA_POINTS, "ManaPotion");
+        super(MANA_POINTS, TreasureFactory.MANA_POTION);
     }
 
     @Override

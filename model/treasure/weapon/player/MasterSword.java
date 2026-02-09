@@ -1,5 +1,6 @@
 package model.treasure.weapon.player;
 
+import model.treasure.TreasureFactory;
 import model.treasure.weapon.Weapon;
 
 public final class MasterSword extends Weapon {
@@ -7,6 +8,6 @@ public final class MasterSword extends Weapon {
     private static final int LEVEL_REQ = 4;
 
     public MasterSword() {
-        super(ATTACK_DMG, LEVEL_REQ, "MasterSword");
+        super(ATTACK_DMG, LEVEL_REQ, TreasureFactory.MASTER_SWORD);
     }
 }

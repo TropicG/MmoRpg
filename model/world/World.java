@@ -32,8 +32,11 @@ public class World {
     private final TreasureManager treasureManager;
 
     private final String[][] worldMap;
-    private final Set<String> possiblePlayerIds;
-    private final Object movingMonitor = new Object();
+    private final Set<Character> possiblePlayerIds;
+
+    // monitoring object
+    private final Object mapChangeMonitor = new Object();
+    private final Object playerModelManagerMonitor = new Object();
 
     // Functions for initializing the World
     private World() {
@@ -61,7 +64,7 @@ public class World {
         // initializing the player's connection manager
         playerConnectionManager = new PlayerConnectionManager();
 
-        possiblePlayerIds = Set.of("1", "2", "3", "4", "5", "6", "7", "8", "9");
+        possiblePlayerIds = Set.of('1', '2', '3', '4', '5', '6', '7', '8', '9');
     }
 
     // there is a percent chance that a blockage is spawned to the worldMap
@@ -93,7 +96,7 @@ public class World {
         }
 
         // thread-safe: only one player connection can change the map at a time
-        synchronized (movingMonitor) {
+        synchronized (mapChangeMonitor) {
             boolean isValidPosition = isValidPlayerPosition(newX, newY);
             if (isValidPosition) {
 
@@ -113,7 +116,8 @@ public class World {
 
     // TODO: The player cannot go to a place with 2 players or 1 player and 1 Minion
     private boolean isValidPlayerPosition(int newX, int newY) {
-        return isInsideBound(newX,newY) && (worldMap[newX][newY].length() != 2) && !isThereBlockage(newX,newY);
+        return isInsideBound(newX,newY) && !isThereBlockage(newX,newY);
+        //return isInsideBound(newX,newY) && (worldMap[newX][newY].length() != 2) && !isThereBlockage(newX,newY);
     }
 
     private boolean isThereTreasure(int x, int y){
@@ -128,13 +132,26 @@ public class World {
         return ((x >= 0 && x < MAX_ROWS) && (y >= 0 && y < MAX_COLUMNS));
     }
 
+    private boolean arePlayerOnSameLocation(Player playerOne, Player playerTwo) {
+        return playerOne.getXPos() == playerTwo.getXPos() && playerOne.getYPos() == playerTwo.getYPos();
+    }
+
     private boolean hasTileAnotherPlayer(int newX, int newY) {
-        return possiblePlayerIds.contains(worldMap[newX][newY]);
+        boolean otherPlayersOnTile = true;
+        String tile =  worldMap[newX][newY];
+        for(int i = 0; i < tile.length(); i++){
+            if(!possiblePlayerIds.contains(tile.charAt(i))) {
+                otherPlayersOnTile = false;
+                break;
+            }
+        }
+
+        return otherPlayersOnTile;
     }
 
     private void updateCurrentLoc(String playerId, int playerX, int playerY) {
         // if the current location has two characters on the tile
-        if (worldMap[playerX][playerY].length() == 2) {
+        if (worldMap[playerX][playerY].length() != 1) {
             worldMap[playerX][playerY] = worldMap[playerX][playerY].replaceFirst(playerId, "");
         } else {
             worldMap[playerX][playerY] = EMPTY_SPACE;
@@ -157,14 +174,52 @@ public class World {
     // THESE FUNCTIONS ARE RESPONSIBLE FOR WRITING THE INVENTORY TO THE CLIENT
     public void showInventoryToPlayer(int playerId) {
         Player player = playerModelManager.getPlayer(playerId);
-        informPlayer(playerId, player.getBackpack().toString());
+
+        if(player.isBackpackEmpty()) {
+            System.out.println("BACK PACK IS EMPTY");
+            informPlayer(playerId, "Backpack is empty\n");
+        } else {
+            informPlayer(playerId, player.getBackpack().toString());
+        }
+    }
+
+    private static int getPlayerId(int playerId) {
+        return playerId;
+    }
+
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR TRADING BETWEEN PLAYERS
+    public void giveTreasureToPlayer(int fromPlayerId, int toPlayerId, Treasure treasure) {
+
+        if(treasure == null) {
+            informPlayer(fromPlayerId, "No such item\n");
+        }
+
+        synchronized (mapChangeMonitor) {
+            Player fromPlayer = playerModelManager.getPlayer(fromPlayerId);
+            Player toPlayer = playerModelManager.getPlayer(toPlayerId);
+
+            if(!arePlayerOnSameLocation(fromPlayer, toPlayer)) {
+                informPlayer(fromPlayerId, "You are not on the same location\n");
+            } else if(!fromPlayer.hasTreasure(treasure)) {
+                informPlayer(fromPlayerId, "You do not have this treasure\n");
+            } else if(toPlayer.isBackpackFull()) {
+                informPlayer(toPlayerId, "Your backpack is full");
+                informPlayer(fromPlayerId, "Player " + toPlayerId + " backpack is full\n");
+            } else {
+                fromPlayer.removeTreasure(treasure);
+                informPlayer(fromPlayerId, "You gave " + treasure.getTreasureName() + " \n");
+
+                toPlayer.addTreasure(treasure);
+                informPlayer(toPlayerId, "You received " + treasure.getTreasureName() + " from " + fromPlayerId + "  \n");
+            }
+        }
     }
 
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR SPAWNING A NEW PLAYER ON THE MAP
     public void acceptNewPlayer(Socket socketForPlayer, int playerId) {
 
-        synchronized (movingMonitor) {
+        synchronized (mapChangeMonitor) {
             List<Integer> positionToStart = calculateBestPosition();
             Player player = new Player(playerId, positionToStart.getFirst(), positionToStart.getLast());
             playerModelManager.addNewPlayerModel(playerId, player);

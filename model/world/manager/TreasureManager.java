@@ -1,6 +1,7 @@
 package model.world.manager;
 
 import model.treasure.Treasure;
+import model.treasure.TreasureFactory;
 import model.treasure.potion.AttackPotion;
 import model.treasure.potion.DefensePotion;
 import model.treasure.potion.HealthPotion;
@@ -49,7 +50,6 @@ public class TreasureManager {
     private static final int TREASURE_TYPE_POTION = 2;
     private static final int TOTAL_TREASURE_TYPES = 3;
 
-
     private final Random random;
 
     public TreasureManager() {
@@ -70,11 +70,11 @@ public class TreasureManager {
         int weaponType = random.nextInt(TOTAL_PLAYER_WEAPONS);
 
         return switch (weaponType) {
-            case BATTLE_AXE -> new BattleAxe();
-            case COPPER_SWORD -> new CopperSword();
-            case MASTER_SWORD -> new MasterSword();
-            case WOODEN_SWORD -> new WoodenSword();
-            case XENOBLADE -> new Xenoblade();
+            case BATTLE_AXE -> TreasureFactory.ofWeapon(TreasureFactory.BATTLE_AXE);
+            case COPPER_SWORD -> TreasureFactory.ofWeapon(TreasureFactory.COPPER_SWORD);
+            case MASTER_SWORD -> TreasureFactory.ofWeapon(TreasureFactory.MASTER_SWORD);
+            case WOODEN_SWORD -> TreasureFactory.ofWeapon(TreasureFactory.WOODEN_SWORD);
+            case XENOBLADE -> TreasureFactory.ofWeapon(TreasureFactory.XENOBLADE);
             default -> null;
         };
     }
@@ -83,10 +83,10 @@ public class TreasureManager {
         int spellType = random.nextInt(TOTAL_SPELLS);
 
         return switch (spellType) {
-            case FLAMETHROWER -> new Flamethrower();
-            case TWISTER -> new Twister();
-            case THUNDERBOLT -> new Thunderbolt();
-            case HYDRO_CANNON -> new HydroCannon();
+            case FLAMETHROWER -> TreasureFactory.ofSpell(TreasureFactory.FLAMETHROWER);
+            case TWISTER -> TreasureFactory.ofSpell(TreasureFactory.TWISTER);
+            case THUNDERBOLT -> TreasureFactory.ofSpell(TreasureFactory.THUNDERBOLT);
+            case HYDRO_CANNON -> TreasureFactory.ofSpell(TreasureFactory.HYDRO_CANNON);
             default -> null;
         };
     }
@@ -96,10 +96,10 @@ public class TreasureManager {
         int potionType = random.nextInt(ALL_SPELLS);
 
         return switch (potionType) {
-            case HEALTH_POTION -> new HealthPotion();
-            case MANA_POTION -> new ManaPotion();
-            case ATTACK_POTION -> new AttackPotion();
-            case DEFENSE_POTION -> new DefensePotion();
+            case HEALTH_POTION -> TreasureFactory.ofPotion(TreasureFactory.HEALTH_POTION);
+            case MANA_POTION -> TreasureFactory.ofPotion(TreasureFactory.MANA_POTION);
+            case ATTACK_POTION -> TreasureFactory.ofPotion(TreasureFactory.ATTACK_POTION);
+            case DEFENSE_POTION -> TreasureFactory.ofPotion(TreasureFactory.DEFENSE_POTION);
             default -> null;
         };
     }
