@@ -22,10 +22,13 @@ public class World {
     private static final String BLOCKAGE_SPACE = "#";
     private static final String EMPTY_SPACE = ".";
     private static final String TREASURE_SPACE = "*";
+    private static final String MINION_SPACE = "M";
+
     private static final int SINGLE_TILE = 1;
 
-    private static final double PERCENTAGE_FOR_BLOCKAGE = 0.13;
-    private static final double PERCENTAGE_FOR_TREASURE = 0.08;
+    private static final double PERCENTAGE_FOR_BLOCKAGE = 0.20;
+    private static final double PERCENTAGE_FOR_TREASURE = 0.10;
+    private static final double PERCENTAGE_FOR_MINION = 0.05;
 
     private static final World world = new World();
 
@@ -52,6 +55,8 @@ public class World {
                     worldMap[i][j] = BLOCKAGE_SPACE;
                 } else if (canPlaceTreasure()) {
                     worldMap[i][j] = TREASURE_SPACE;
+                } else if(canPlaceMinion()) {
+                    worldMap[i][j] = MINION_SPACE;
                 } else {
                     worldMap[i][j] = EMPTY_SPACE;
                 }
@@ -79,18 +84,28 @@ public class World {
         return Math.random() < PERCENTAGE_FOR_TREASURE;
     }
 
+    private boolean canPlaceMinion() {
+        return Math.random() < PERCENTAGE_FOR_MINION;
+    }
+
     public static World getInstance() {
         return world;
     }
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR EQUIPPING A WEAPON TO THE PLAYER
     public void equipWeaponToPlayer(int playerId, Weapon weapon) {
-        synchronized (playerModelManagerMonitor) {
-            // TODO: Decide must there be a monitor for equipping a weapon
+        if(weapon == null) {
+            informPlayer(playerId, "This is not a weapon\n");
+            return;
+        }
+
+        synchronized (mapChangeMonitor) {
             Player player = playerModelManager.getPlayer(playerId);
 
-            if(!player.hasTreasure(weapon)) {
+            if (!player.hasTreasure(weapon)) {
                 informPlayer(playerId, "This item is not in the backpack\n");
+            } else if (player.getCurrentLevel() < weapon.getLevelReq()) {
+                informPlayer(playerId, "The required level for this item is " + weapon.getLevelReq() + "\n");
             } else {
                 player.equipWeapon(weapon);
                 informPlayer(playerId, "Equiped " + weapon.getTreasureName() + "\n");
@@ -103,7 +118,7 @@ public class World {
         synchronized (mapChangeMonitor) {
             Player player = playerModelManager.getPlayer(playerId);
 
-            if(!player.hasTreasure(treasure)) {
+            if (!player.hasTreasure(treasure)) {
                 informPlayer(playerId, "You do not have this item\n");
             } else {
                 player.removeTreasure(treasure);
@@ -177,9 +192,9 @@ public class World {
 
     private void removeTreasureFromMap(int x, int y) {
         // if only treasure add emptySpace
-        if(worldMap[x][y].length() == SINGLE_TILE) {
+        if (worldMap[x][y].length() == SINGLE_TILE) {
             worldMap[x][y] = EMPTY_SPACE;
-        } else{
+        } else {
             worldMap[x][y] = worldMap[x][y].replace(TREASURE_SPACE, "");
         }
     }
@@ -191,6 +206,20 @@ public class World {
 
         for (int i = 0; i < worldMap[x][y].length(); i++) {
             if (worldMap[x][y].charAt(i) == TREASURE_SPACE.charAt(0)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isThereMinion(int x, int y) {
+        if (worldMap[x][y].length() == SINGLE_TILE) {
+            return worldMap[x][y].equals(MINION_SPACE);
+        }
+
+        for (int i = 0; i < worldMap[x][y].length(); i++) {
+            if (worldMap[x][y].charAt(i) == MINION_SPACE.charAt(0)) {
                 return true;
             }
         }
@@ -240,7 +269,7 @@ public class World {
             // to the player
             removeTreasureFromMap(newX, newY);
             worldMap[newX][newY] = worldMap[newX][newY] + playerid;
-        } else if (hasTileAnotherPlayer(newX, newY) || (isThereTreasure(newX, newY) && player.isBackpackFull())) {
+        } else if (hasTileAnotherPlayer(newX, newY) || (isThereTreasure(newX, newY) && player.isBackpackFull()) || isThereMinion(newX, newY) ) {
             // if there was another player here, the tile will hold the two players
             // otherwise if there is a treasure and the player cannot take it, on the tile it will combine them
             worldMap[newX][newY] = worldMap[newX][newY] + playerid;

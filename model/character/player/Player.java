@@ -6,11 +6,12 @@ import model.treasure.Treasure;
 import model.treasure.weapon.Weapon;
 
 public class Player extends Actor {
-    private static int PLAYER_STARTING_LEVEL = 1;
-    private static int STARTING_PLAYER_HEALTH = 20;
-    private static int STARTING_PLAYER_MANA = 10;
-    private static int STARTING_PLAYER_DAMAGE = 5;
-    private static int STARTING_PLAYER_DEFENSE = 3;
+    private static final int PLAYER_STARTING_LEVEL = 1;
+    private static final int STARTING_PLAYER_HEALTH = 20;
+    private static final int STARTING_PLAYER_MANA = 10;
+    private static final int STARTING_PLAYER_DAMAGE = 5;
+    private static final int STARTING_PLAYER_DEFENSE = 3;
+    private static final int REWARD_XP = 10;
 
     //TODO: Generate a Builder pattern
     //TODO: Creating a Backpack
@@ -29,7 +30,7 @@ public class Player extends Actor {
                 STARTING_PLAYER_DAMAGE,
                 STARTING_PLAYER_DEFENSE,
                 PLAYER_STARTING_LEVEL,
-                x,y);
+                x,y, REWARD_XP);
 
         this.playerId = playerId;
         this.backpack = new Backpack();
