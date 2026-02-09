@@ -12,8 +12,9 @@ import java.io.IOException;
 public class CommandExecutor {
     // argument placement
     private static int COMMAND_ARG = 0;
+    private static int TREASURE_NAME_DROP_ARG = 1;
     private static int OTHER_PLAYER_ID_ARG = 1;
-    private static int TREASURE_NAME_ARG = 2;
+    private static final int TREASURE_NAME_ARG = 2;
 
     // formatting player's request
     private static int REMOVE_QUOTE = 1;
@@ -28,7 +29,7 @@ public class CommandExecutor {
     private static final String invCommand = "inv";
     private static final String statsCommand = "stats";
     private static final String giveCommand = "give";
-    // give 2
+    private static final String dropCommand = "drop";
 
     private static final World world = World.getInstance();
 
@@ -44,7 +45,13 @@ public class CommandExecutor {
             case invCommand -> world.showInventoryToPlayer(playerId);
             case statsCommand -> world.showPlayerStats(playerId);
             case giveCommand -> giveItemToPlayer(playerId, arguments);
+            case dropCommand -> dropTreasureFromPlayer(playerId, arguments[TREASURE_NAME_DROP_ARG]);
         }
+    }
+
+    private static void dropTreasureFromPlayer(int playerId, String treasureName){
+        Treasure treasure = TreasureFactory.of(treasureName);
+        world.dropTreasureFromPlayer(playerId, treasure);
     }
 
     private static void giveItemToPlayer(int playerId, String[] arguments) {

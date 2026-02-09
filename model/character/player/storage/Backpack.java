@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Backpack {
-    public static int BACKPACK_CAPACITY = 2;
+    public static int BACKPACK_CAPACITY = 10;
 
     private final List<Treasure> allTreasure;
 

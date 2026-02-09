@@ -23,8 +23,8 @@ public class World {
     private static final String TREASURE_SPACE = "*";
     private static final int SINGLE_TILE = 1;
 
-    private static final double PERCENTAGE_FOR_BLOCKAGE = 0.15;
-    private static final double PERCENTAGE_FOR_TREASURE = 0.75;
+    private static final double PERCENTAGE_FOR_BLOCKAGE = 0.13;
+    private static final double PERCENTAGE_FOR_TREASURE = 0.08;
 
     private static final World world = new World();
 
@@ -80,6 +80,26 @@ public class World {
 
     public static World getInstance() {
         return world;
+    }
+
+
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR DROPPING A TREASURE ON THE MAP
+    public void dropTreasureFromPlayer(int playerId, Treasure treasure) {
+        synchronized (mapChangeMonitor) {
+            Player player = playerModelManager.getPlayer(playerId);
+
+            if(!player.hasTreasure(treasure)) {
+                informPlayer(playerId, "You do not have this item\n");
+            } else {
+                player.removeTreasure(treasure);
+                addTreasureOnMap(player.getXPos(), player.getYPos());
+                sendMapToAll();
+            }
+        }
+    }
+
+    private void addTreasureOnMap(int x, int y) {
+        worldMap[x][y] = worldMap[x][y] + TREASURE_SPACE;
     }
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR MOVING A SPECIFIC PLAYER
