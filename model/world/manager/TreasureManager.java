@@ -2,22 +2,8 @@ package model.world.manager;
 
 import model.treasure.Treasure;
 import model.treasure.TreasureFactory;
-import model.treasure.potion.AttackPotion;
-import model.treasure.potion.DefensePotion;
-import model.treasure.potion.HealthPotion;
-import model.treasure.potion.ManaPotion;
-import model.treasure.spell.Flamethrower;
-import model.treasure.spell.HydroCannon;
 import model.treasure.spell.Spell;
-import model.treasure.spell.Thunderbolt;
-import model.treasure.spell.Twister;
 import model.treasure.weapon.Weapon;
-import model.treasure.weapon.player.BattleAxe;
-import model.treasure.weapon.player.CopperSword;
-import model.treasure.weapon.player.MasterSword;
-import model.treasure.weapon.player.WoodenSword;
-import model.treasure.weapon.player.Xenoblade;
-
 import java.util.Random;
 
 public class TreasureManager {

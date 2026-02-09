@@ -12,10 +12,11 @@ import java.io.IOException;
 //TODO: This comamnd will be responsible for registering commands from the client
 public class CommandExecutor {
     // argument placement
-    private static int COMMAND_ARG = 0;
-    private static int TREASURE_NAME_EQUIP_ARG = 1;
-    private static int TREASURE_NAME_DROP_ARG = 1;
-    private static int OTHER_PLAYER_ID_ARG = 1;
+    private static final int COMMAND_ARG = 0;
+    private static final int TREASURE_NAME_EQUIP_ARG = 1;
+    private static final int TREASURE_NAME_DROP_ARG = 1;
+    private static final int OTHER_PLAYER_ID_ARG = 1;
+    private static final int TARGET_NAME_ARG = 1;
     private static final int TREASURE_NAME_ARG = 2;
 
     // formatting player's request
@@ -33,6 +34,7 @@ public class CommandExecutor {
     private static final String giveCommand = "give";
     private static final String dropCommand = "drop";
     private static final String equipCommand = "eq";
+    private static final String attackCommand = "attack";
 
     private static final World world = World.getInstance();
 
@@ -50,7 +52,15 @@ public class CommandExecutor {
             case giveCommand -> giveItemToPlayer(playerId, arguments);
             case dropCommand -> dropTreasureFromPlayer(playerId, arguments[TREASURE_NAME_DROP_ARG]);
             case equipCommand -> equipWeaponToPlayer(playerId, arguments[TREASURE_NAME_EQUIP_ARG]);
+            case attackCommand -> executeAttack(playerId, arguments[TARGET_NAME_ARG]);
         }
+    }
+
+    private static void executeAttack(int playerId, String targetName) {
+        if(targetName.equals(World.MINION_SPACE)) {
+            world.attackMinion(playerId);
+        }
+
     }
 
     private static void equipWeaponToPlayer(int playerId, String weaponName) {

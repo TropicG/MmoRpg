@@ -1,9 +1,14 @@
 package model.world;
 
+import model.character.Actor;
+import model.character.enemy.Minion;
+import model.character.enemy.MinionFactory;
+import model.character.position.Position;
 import model.character.player.Player;
 import model.treasure.Treasure;
 import model.treasure.weapon.Weapon;
 import model.world.direction.Direction;
+import model.world.manager.MinionManager;
 import model.world.manager.PlayerConnectionManager;
 import model.world.manager.PlayerModelManager;
 import model.world.manager.TreasureManager;
@@ -19,10 +24,10 @@ public class World {
     private static final int MAX_COLUMNS = 10;
 
     // possible tiles on the map
-    private static final String BLOCKAGE_SPACE = "#";
-    private static final String EMPTY_SPACE = ".";
-    private static final String TREASURE_SPACE = "*";
-    private static final String MINION_SPACE = "M";
+    public static final String BLOCKAGE_SPACE = "#";
+    public static final String EMPTY_SPACE = ".";
+    public static final String TREASURE_SPACE = "*";
+    public static final String MINION_SPACE = "M";
 
     private static final int SINGLE_TILE = 1;
 
@@ -36,6 +41,7 @@ public class World {
     private final PlayerModelManager playerModelManager;
     private final PlayerConnectionManager playerConnectionManager;
     private final TreasureManager treasureManager;
+    private final MinionManager minionManager;
 
     //TODO: Make sure the worldMap is StringBuilder
     private final String[][] worldMap;
@@ -43,10 +49,11 @@ public class World {
 
     // monitoring object
     private final Object mapChangeMonitor = new Object();
-    private final Object playerModelManagerMonitor = new Object();
 
     // Functions for initializing the World
     private World() {
+        minionManager = new MinionManager();
+
         // Initializing the world
         worldMap = new String[MAX_ROWS][MAX_COLUMNS];
         for (int i = 0; i < MAX_ROWS; i++) {
@@ -56,6 +63,7 @@ public class World {
                 } else if (canPlaceTreasure()) {
                     worldMap[i][j] = TREASURE_SPACE;
                 } else if(canPlaceMinion()) {
+                    minionManager.addMinionToWorld(Position.of(i,j), MinionFactory.ofOrc(i,j));
                     worldMap[i][j] = MINION_SPACE;
                 } else {
                     worldMap[i][j] = EMPTY_SPACE;
@@ -113,6 +121,40 @@ public class World {
         }
     }
 
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR ATTACKING A MINION
+    public void attackMinion(int playerId) {
+        synchronized (mapChangeMonitor) {
+
+            Player player = playerModelManager.getPlayer(playerId);
+            if(!isThereMinion(player.getXPos(), player.getYPos())) {
+                informPlayer(playerId, "You are not on minion block\n");
+                return;
+            }
+
+            Minion minion = minionManager.getMinion(Position.of(player.getXPos(), player.getYPos()));
+            minion.takeDamage(player.calculateAtkDmg());
+            informPlayer(playerId, "Attack landed\n");
+            if(minion.isDead()) {
+                informPlayer(playerId, "You killed the minion\n");
+                removeMinionFromMap(player.getXPos(), player.getYPos());
+                Position newMinionPosition = calculateBestPosition();
+
+                // adding the new minion to the map
+                minionManager.addMinionToWorld(newMinionPosition, MinionFactory.ofOrc(newMinionPosition.getX(), newMinionPosition.getY()));
+                addMinionOnMap(newMinionPosition.getX(), newMinionPosition.getY());
+                sendMapToAll();
+                return;
+            }
+
+            //TODO: FINISH PLAYER TAKING DAMAGE
+            //player.takeDamage(minion.getDamage());
+        }
+    }
+
+    private boolean areOnSamePosition(Actor player, Actor minion) {
+        return player.getXPos() == minion.getXPos() && player.getYPos() == minion.getYPos();
+    }
+
     // THESE FUNCTIONS ARE RESPONSIBLE FOR DROPPING A TREASURE ON THE MAP
     public void dropTreasureFromPlayer(int playerId, Treasure treasure) {
         synchronized (mapChangeMonitor) {
@@ -130,6 +172,10 @@ public class World {
 
     private void addTreasureOnMap(int x, int y) {
         worldMap[x][y] = worldMap[x][y] + TREASURE_SPACE;
+    }
+
+    private void addMinionOnMap(int x, int y) {
+        worldMap[x][y] = MINION_SPACE;
     }
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR MOVING A SPECIFIC PLAYER
@@ -197,6 +243,10 @@ public class World {
         } else {
             worldMap[x][y] = worldMap[x][y].replace(TREASURE_SPACE, "");
         }
+    }
+
+    private void removeMinionFromMap(int x, int y) {
+        worldMap[x][y] = worldMap[x][y].replace(MINION_SPACE, "");
     }
 
     private boolean isThereTreasure(int x, int y) {
@@ -326,10 +376,9 @@ public class World {
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR SPAWNING A NEW PLAYER ON THE MAP
     public void acceptNewPlayer(Socket socketForPlayer, int playerId) {
-
         synchronized (mapChangeMonitor) {
-            List<Integer> positionToStart = calculateBestPosition();
-            Player player = new Player(playerId, positionToStart.getFirst(), positionToStart.getLast());
+            Position positionToStart = calculateBestPosition();
+            Player player = new Player(playerId, positionToStart.getX(), positionToStart.getY());
             playerModelManager.addNewPlayerModel(playerId, player);
             playerConnectionManager.addNewPlayerConnection(playerId, socketForPlayer);
             changePlayerLocation(playerId, player, player.getXPos(), player.getYPos());
@@ -348,15 +397,15 @@ public class World {
     //TODO: If currently there are no possible place to place the client, inform him
     //TODO: In the future add logic that will calculate location for the player on a position where no enemies are in the 4 directions
     //TODO: Make a logic so that the player is not blocked from all sides
-    private List<Integer> calculateBestPosition() {
+    private Position calculateBestPosition() {
         for (int i = 0; i < MAX_ROWS; i++) {
             for (int j = 0; j < MAX_COLUMNS; j++) {
                 if (worldMap[i][j].equals(EMPTY_SPACE)) {
-                    return List.of(i, j);
+                    return Position.of(i, j);
                 }
             }
         }
-        return List.of();
+        return Position.of(0,0);
     }
 
     // THESE FUNCTIONS are responsible to show this person's stats

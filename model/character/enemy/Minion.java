@@ -7,4 +7,9 @@ public class Minion extends Actor {
     public Minion(int health, int mana, int damage, int defense, int currentLevel, int x, int y, int rewardXp) {
         super(health, mana, damage, defense, currentLevel, x, y, rewardXp);
     }
+
+    @Override
+    public int calculateAtkDmg() {
+        return super.damage + super.currentLevel;
+    }
 }

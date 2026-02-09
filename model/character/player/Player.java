@@ -18,9 +18,7 @@ public class Player extends Actor {
     //TODO: Creating a Container for Spells
     //TODO: Creating a Container for Potions
 
-    private final int playerId;
     private final Backpack backpack;
-
     private Weapon equipedWeapon;
 
     //TODO: Change the names of the parameters for the player location
@@ -32,9 +30,19 @@ public class Player extends Actor {
                 PLAYER_STARTING_LEVEL,
                 x,y, REWARD_XP);
 
-        this.playerId = playerId;
         this.backpack = new Backpack();
         equipedWeapon = null;
+    }
+
+    @Override
+    public int calculateAtkDmg() {
+        int totalAttackDmg = super.damage;
+
+        if(equipedWeapon != null) {
+            totalAttackDmg += equipedWeapon.getAttackDmg();
+        }
+
+        return totalAttackDmg;
     }
 
     public void addTreasure(Treasure treasure) {
