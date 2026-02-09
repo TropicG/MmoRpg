@@ -22,7 +22,7 @@ public class World {
     private static final String TREASURE_SPACE = "*";
 
     private static final double PERCENTAGE_FOR_BLOCKAGE = 0.15;
-    private static final double PERCENTAGE_FOR_TREASURE = 0.15;
+    private static final double PERCENTAGE_FOR_TREASURE = 0.75;
 
     private static final World world = new World();
 
@@ -48,8 +48,7 @@ public class World {
                     worldMap[i][j] = BLOCKAGE_SPACE;
                 } else if (canPlaceTreasure()) {
                     worldMap[i][j] = TREASURE_SPACE;
-                }
-                else {
+                } else {
                     worldMap[i][j] = EMPTY_SPACE;
                 }
             }
@@ -104,35 +103,49 @@ public class World {
 
                 hasChangeOccurred = true;
 
-                if(isThereTreasure(newX, newY)) {
-                    Treasure treasure = treasureManager.getRandomTreasure();
-                    playerModelManager.addTreasureToPlayer(playerId, treasure);
-                    informPlayer(playerId, "You have received " + treasure.getTreasureName() + "\n");
+                //TODO: A player cannot take a * if the backpack is full
+                //TODO: Another player can take the * if the other player on tie has its backpack full
+
+                if (isThereTreasure(newX, newY)) {
+                    if (!player.isBackpackFull()) {
+                        Treasure treasure = treasureManager.getRandomTreasure();
+                        playerModelManager.addTreasureToPlayer(playerId, treasure);
+                        informPlayer(playerId, "You have received " + treasure.getTreasureName() + "\n");
+
+                        // if the player just got its 10th backpack fill
+                        if (player.isBackpackFull()) {
+                            removeTreasureFromMap(newX, newY);
+                        }
+                    }
                 }
 
                 // changes the current tile the player is on, either leave it * or check if there is another player on the tile
                 updateCurrentLoc(String.valueOf(playerId), player.getXPos(), player.getYPos());
                 playerModelManager.updatePlayerPosition(playerId, newX, newY); // updating the player new location
-                changePlayerLocation(playerId, newX, newY); // actual change of the player location
+                changePlayerLocation(playerId, player, newX, newY); // actual change of the player location
             }
         }
 
-        if(hasChangeOccurred) {
+        if (hasChangeOccurred) {
             sendMapToAll();
         }
     }
 
     // TODO: The player cannot go to a place with 2 players or 1 player and 1 Minion
     private boolean isValidPlayerPosition(int newX, int newY) {
-        return isInsideBound(newX,newY) && !isThereBlockage(newX,newY);
+        return isInsideBound(newX, newY) && !isThereBlockage(newX, newY);
         //return isInsideBound(newX,newY) && (worldMap[newX][newY].length() != 2) && !isThereBlockage(newX,newY);
     }
 
-    private boolean isThereTreasure(int x, int y){
+    private void removeTreasureFromMap(int x, int y) {
+        worldMap[x][y] = EMPTY_SPACE;
+    }
+
+    private boolean isThereTreasure(int x, int y) {
         return worldMap[x][y].equals(TREASURE_SPACE);
     }
 
-    private boolean isThereBlockage(int x, int y){
+    private boolean isThereBlockage(int x, int y) {
         return worldMap[x][y].equals(BLOCKAGE_SPACE);
     }
 
@@ -146,9 +159,9 @@ public class World {
 
     private boolean hasTileAnotherPlayer(int newX, int newY) {
         boolean otherPlayersOnTile = true;
-        String tile =  worldMap[newX][newY];
-        for(int i = 0; i < tile.length(); i++){
-            if(!possiblePlayerIds.contains(tile.charAt(i))) {
+        String tile = worldMap[newX][newY];
+        for (int i = 0; i < tile.length(); i++) {
+            if (!possiblePlayerIds.contains(tile.charAt(i))) {
                 otherPlayersOnTile = false;
                 break;
             }
@@ -159,7 +172,7 @@ public class World {
 
     private void updateCurrentLoc(String playerId, int playerX, int playerY) {
         // if the current location has two characters on the tile
-        if (worldMap[playerX][playerY].length() != 1) {
+        if (worldMap[playerX][playerY].length() != 1 || isThereTreasure(playerX, playerY)) {
             worldMap[playerX][playerY] = worldMap[playerX][playerY].replaceFirst(playerId, "");
         } else {
             worldMap[playerX][playerY] = EMPTY_SPACE;
@@ -167,13 +180,15 @@ public class World {
     }
 
     //TODO: Create a logic if there is another player
-    public void changePlayerLocation(int id, int newX, int newY) {
-        if (hasTileAnotherPlayer(newX, newY)) {
+    public void changePlayerLocation(int playerid, Player player, int newX, int newY) {
+
+        if (hasTileAnotherPlayer(newX, newY) || (isThereTreasure(newX, newY) && player.isBackpackFull())) {
             // if there was another player here, the tile will hold the two players
-            worldMap[newX][newY] = worldMap[newX][newY] + id;
+            // otherwise if there is a treasure and the player cannot take it, on the tile it will combine them
+            worldMap[newX][newY] = worldMap[newX][newY] + playerid;
         } else {
             // if the tile that the player has to move is empty
-            worldMap[newX][newY] = "" + id;
+            worldMap[newX][newY] = "" + playerid;
         }
     }
 
@@ -181,7 +196,7 @@ public class World {
     public void showInventoryToPlayer(int playerId) {
         Player player = playerModelManager.getPlayer(playerId);
 
-        if(player.isBackpackEmpty()) {
+        if (player.isBackpackEmpty()) {
             System.out.println("BACK PACK IS EMPTY");
             informPlayer(playerId, "Backpack is empty\n");
         } else {
@@ -196,7 +211,7 @@ public class World {
     // THESE FUNCTIONS ARE RESPONSIBLE FOR TRADING BETWEEN PLAYERS
     public void giveTreasureToPlayer(int fromPlayerId, int toPlayerId, Treasure treasure) {
 
-        if(treasure == null) {
+        if (treasure == null) {
             informPlayer(fromPlayerId, "No such item\n");
         }
 
@@ -204,11 +219,11 @@ public class World {
             Player fromPlayer = playerModelManager.getPlayer(fromPlayerId);
             Player toPlayer = playerModelManager.getPlayer(toPlayerId);
 
-            if(!arePlayerOnSameLocation(fromPlayer, toPlayer)) {
+            if (!arePlayerOnSameLocation(fromPlayer, toPlayer)) {
                 informPlayer(fromPlayerId, "You are not on the same location\n");
-            } else if(!fromPlayer.hasTreasure(treasure)) {
+            } else if (!fromPlayer.hasTreasure(treasure)) {
                 informPlayer(fromPlayerId, "You do not have this treasure\n");
-            } else if(toPlayer.isBackpackFull()) {
+            } else if (toPlayer.isBackpackFull()) {
                 informPlayer(toPlayerId, "Your backpack is full");
                 informPlayer(fromPlayerId, "Player " + toPlayerId + " backpack is full\n");
             } else {
@@ -230,7 +245,7 @@ public class World {
             Player player = new Player(playerId, positionToStart.getFirst(), positionToStart.getLast());
             playerModelManager.addNewPlayerModel(playerId, player);
             playerConnectionManager.addNewPlayerConnection(playerId, socketForPlayer);
-            changePlayerLocation(playerId, player.getXPos(), player.getYPos());
+            changePlayerLocation(playerId, player, player.getXPos(), player.getYPos());
         }
 
         informPlayer(playerId, "Welcome to the server player: " + playerId + "\n");
