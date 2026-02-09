@@ -95,10 +95,14 @@ public class World {
             case RIGHT -> newY += 1;
         }
 
+        boolean hasChangeOccurred = false;
+
         // thread-safe: only one player connection can change the map at a time
         synchronized (mapChangeMonitor) {
             boolean isValidPosition = isValidPlayerPosition(newX, newY);
             if (isValidPosition) {
+
+                hasChangeOccurred = true;
 
                 if(isThereTreasure(newX, newY)) {
                     Treasure treasure = treasureManager.getRandomTreasure();
@@ -111,6 +115,10 @@ public class World {
                 playerModelManager.updatePlayerPosition(playerId, newX, newY); // updating the player new location
                 changePlayerLocation(playerId, newX, newY); // actual change of the player location
             }
+        }
+
+        if(hasChangeOccurred) {
+            sendMapToAll();
         }
     }
 
@@ -167,8 +175,6 @@ public class World {
             // if the tile that the player has to move is empty
             worldMap[newX][newY] = "" + id;
         }
-
-        sendMapToAll();
     }
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR WRITING THE INVENTORY TO THE CLIENT
@@ -228,6 +234,7 @@ public class World {
         }
 
         informPlayer(playerId, "Welcome to the server player: " + playerId + "\n");
+        sendMapToAll();
 
         //TODO: Create new player
         //TODO: Assign the new player a location

@@ -1,7 +1,5 @@
 package model.world.manager;
 
-import model.character.player.Player;
-
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
