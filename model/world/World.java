@@ -17,9 +17,11 @@ public class World {
     private static final int MAX_ROWS = 10;
     private static final int MAX_COLUMNS = 10;
 
+    // possible tiles on the map
     private static final String BLOCKAGE_SPACE = "#";
     private static final String EMPTY_SPACE = ".";
     private static final String TREASURE_SPACE = "*";
+    private static final int SINGLE_TILE = 1;
 
     private static final double PERCENTAGE_FOR_BLOCKAGE = 0.15;
     private static final double PERCENTAGE_FOR_TREASURE = 0.75;
@@ -31,6 +33,7 @@ public class World {
     private final PlayerConnectionManager playerConnectionManager;
     private final TreasureManager treasureManager;
 
+    //TODO: Make sure the worldMap is StringBuilder
     private final String[][] worldMap;
     private final Set<Character> possiblePlayerIds;
 
@@ -138,11 +141,26 @@ public class World {
     }
 
     private void removeTreasureFromMap(int x, int y) {
-        worldMap[x][y] = EMPTY_SPACE;
+        // if only treasure add emptySpace
+        if(worldMap[x][y].length() == SINGLE_TILE) {
+            worldMap[x][y] = EMPTY_SPACE;
+        } else{
+            worldMap[x][y] = worldMap[x][y].replace(TREASURE_SPACE, "");
+        }
     }
 
     private boolean isThereTreasure(int x, int y) {
-        return worldMap[x][y].equals(TREASURE_SPACE);
+        if (worldMap[x][y].length() == SINGLE_TILE) {
+            return worldMap[x][y].equals(TREASURE_SPACE);
+        }
+
+        for (int i = 0; i < worldMap[x][y].length(); i++) {
+            if (worldMap[x][y].charAt(i) == TREASURE_SPACE.charAt(0)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private boolean isThereBlockage(int x, int y) {
@@ -158,11 +176,12 @@ public class World {
     }
 
     private boolean hasTileAnotherPlayer(int newX, int newY) {
-        boolean otherPlayersOnTile = true;
+        boolean otherPlayersOnTile = false;
         String tile = worldMap[newX][newY];
+
         for (int i = 0; i < tile.length(); i++) {
-            if (!possiblePlayerIds.contains(tile.charAt(i))) {
-                otherPlayersOnTile = false;
+            if (possiblePlayerIds.contains(tile.charAt(i))) {
+                otherPlayersOnTile = true;
                 break;
             }
         }
@@ -172,7 +191,7 @@ public class World {
 
     private void updateCurrentLoc(String playerId, int playerX, int playerY) {
         // if the current location has two characters on the tile
-        if (worldMap[playerX][playerY].length() != 1 || isThereTreasure(playerX, playerY)) {
+        if (worldMap[playerX][playerY].length() != 1) {
             worldMap[playerX][playerY] = worldMap[playerX][playerY].replaceFirst(playerId, "");
         } else {
             worldMap[playerX][playerY] = EMPTY_SPACE;
@@ -181,8 +200,12 @@ public class World {
 
     //TODO: Create a logic if there is another player
     public void changePlayerLocation(int playerid, Player player, int newX, int newY) {
-
-        if (hasTileAnotherPlayer(newX, newY) || (isThereTreasure(newX, newY) && player.isBackpackFull())) {
+        if (hasTileAnotherPlayer(newX, newY) && isThereTreasure(newX, newY) && !player.isBackpackFull()) {
+            // if there is another player on the map and a treasure to take, remove the treasure and add the second player
+            // to the player
+            removeTreasureFromMap(newX, newY);
+            worldMap[newX][newY] = worldMap[newX][newY] + playerid;
+        } else if (hasTileAnotherPlayer(newX, newY) || (isThereTreasure(newX, newY) && player.isBackpackFull())) {
             // if there was another player here, the tile will hold the two players
             // otherwise if there is a treasure and the player cannot take it, on the tile it will combine them
             worldMap[newX][newY] = worldMap[newX][newY] + playerid;
