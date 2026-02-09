@@ -3,7 +3,7 @@ package model.treasure.potion;
 import model.treasure.TreasureFactory;
 
 public class HealthPotion extends Potion {
-    private static final int HEALTH_POINTS = 10;
+    public static final int HEALTH_POINTS = 30;
 
     public HealthPotion() {
         super(HEALTH_POINTS, TreasureFactory.HEALTH_POTION);

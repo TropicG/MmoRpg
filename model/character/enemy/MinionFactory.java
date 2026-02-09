@@ -3,11 +3,11 @@ package model.character.enemy;
 import java.util.Random;
 
 public class MinionFactory {
-    private static int ORC_HEALTH = 7;
+    private static int ORC_HEALTH = 150;
     private static int ORC_MANA = 0;
-    private static int ORC_DAMAGE = 4;
-    private static int ORC_DEFENSE = 3;
-    private static int ORC_XP_REWARD = 6;
+    private static int ORC_DAMAGE = 40;
+    private static int ORC_DEFENSE = 20;
+    private static int ORC_XP_REWARD = 25;
 
     private static int MIN_MINION_LEVEL = 1;
     private static int MAX_MINION_LEVEL = 10;

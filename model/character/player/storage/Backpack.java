@@ -22,6 +22,10 @@ public class Backpack {
         allTreasure.remove(treasure);
     }
 
+    public int getItemCountBackpack() {
+        return allTreasure.size();
+    }
+
     public List<Treasure> getAllTreasure() {
         return allTreasure;
     }

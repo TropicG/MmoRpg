@@ -2,8 +2,12 @@ package model.character;
 
 public abstract class Actor {
 
-    protected int health;
-    protected int mana;
+    protected int totalHealth;
+    protected int currentHealth;
+
+    protected int totalMana;
+    protected int currentMana;
+
     protected int damage;
     protected int defense;
     protected int currentLevel;
@@ -15,8 +19,12 @@ public abstract class Actor {
 
     //TODO: Change the names of the parameters for player location
     public Actor(int health, int mana, int damage, int defense, int currentLevel, int xPos, int yPos, int xpReward) {
-        this.health = health;
-        this.mana = mana;
+        this.totalHealth = health;
+        this.currentHealth = health;
+
+        this.totalMana = mana;
+        this.currentMana = mana;
+
         this.damage = damage;
         this.defense = defense;
         this.currentLevel = currentLevel;
@@ -31,24 +39,40 @@ public abstract class Actor {
     }
 
     public void takeDamage(int dmgPoints) {
-        health -= dmgPoints;
 
-        if(health < 0) {
-            health = 0;
+        int trueDamage = dmgPoints - defense;
+        if(trueDamage < 0) {
+            trueDamage = 0;
+        }
+
+        currentHealth -= trueDamage; //(dmgPoints - defense);
+
+        System.out.println(dmgPoints - defense);
+
+        if(currentHealth < 0) {
+            currentHealth = 0;
         }
     }
 
     public boolean isDead() {
-        return health == 0;
+        return currentHealth == 0;
     }
 
     // GETTERS
-    public int getHealth() {
-        return health;
+    public int getTotalHealth() {
+        return totalHealth;
     }
 
-    public int getMana() {
-        return mana;
+    public int getCurrentHealth() {
+        return currentHealth;
+    }
+
+    public int getTotalMana() {
+        return totalMana;
+    }
+
+    public int getCurrentMana() {
+        return currentMana;
     }
 
     public int getDamage() {
@@ -69,6 +93,10 @@ public abstract class Actor {
 
     public int getYPos() {
         return yPos;
+    }
+
+    public int getXpReward() {
+        return xpReward;
     }
 
     // SETTERS

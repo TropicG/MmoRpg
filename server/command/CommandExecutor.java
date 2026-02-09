@@ -2,9 +2,12 @@ package server.command;
 
 import model.treasure.Treasure;
 import model.treasure.TreasureFactory;
+import model.treasure.potion.Potion;
+import model.treasure.spell.Spell;
 import model.treasure.weapon.Weapon;
 import model.world.World;
 import model.world.direction.Direction;
+import model.world.manager.TreasureManager;
 
 import java.io.IOException;
 
@@ -13,8 +16,7 @@ import java.io.IOException;
 public class CommandExecutor {
     // argument placement
     private static final int COMMAND_ARG = 0;
-    private static final int TREASURE_NAME_EQUIP_ARG = 1;
-    private static final int TREASURE_NAME_DROP_ARG = 1;
+    private static final int TREASURE_NAME = 1;
     private static final int OTHER_PLAYER_ID_ARG = 1;
     private static final int TARGET_NAME_ARG = 1;
     private static final int TREASURE_NAME_ARG = 2;
@@ -35,6 +37,8 @@ public class CommandExecutor {
     private static final String dropCommand = "drop";
     private static final String equipCommand = "eq";
     private static final String attackCommand = "attack";
+    private static final String drinkCommand = "drink";
+    private static final String castCommand = "cast";
 
     private static final World world = World.getInstance();
 
@@ -50,17 +54,32 @@ public class CommandExecutor {
             case invCommand -> world.showInventoryToPlayer(playerId);
             case statsCommand -> world.showPlayerStats(playerId);
             case giveCommand -> giveItemToPlayer(playerId, arguments);
-            case dropCommand -> dropTreasureFromPlayer(playerId, arguments[TREASURE_NAME_DROP_ARG]);
-            case equipCommand -> equipWeaponToPlayer(playerId, arguments[TREASURE_NAME_EQUIP_ARG]);
+            case dropCommand -> dropTreasureFromPlayer(playerId, arguments[TREASURE_NAME]);
+            case equipCommand -> equipWeaponToPlayer(playerId, arguments[TREASURE_NAME]);
             case attackCommand -> executeAttack(playerId, arguments[TARGET_NAME_ARG]);
+            case drinkCommand -> drinkPotion(playerId, arguments[TREASURE_NAME]);
+            case castCommand -> castSpell(playerId, arguments[TARGET_NAME_ARG], arguments[TREASURE_NAME_ARG]);
         }
+    }
+
+    private static void drinkPotion(int playerId, String potionName) {
+        Potion potion = TreasureFactory.ofPotion(potionName);
+        world.playerDrinkPotion(playerId, potion);
     }
 
     private static void executeAttack(int playerId, String targetName) {
         if(targetName.equals(World.MINION_SPACE)) {
             world.attackMinion(playerId);
         }
+    }
 
+    private static void castSpell(int playerId, String targetName, String spellName) {
+
+        Spell spell = TreasureFactory.ofSpell(spellName);
+
+        if(targetName.equals(World.MINION_SPACE)) {
+            world.castSpellMinion(playerId, spell);
+        }
     }
 
     private static void equipWeaponToPlayer(int playerId, String weaponName) {

@@ -1,6 +1,5 @@
 package model.treasure.spell;
 
-import model.treasure.Treasure;
 import model.treasure.TreasureFactory;
 
 public class Twister extends Spell {

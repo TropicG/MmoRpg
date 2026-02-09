@@ -3,15 +3,36 @@ package model.character.player;
 import model.character.Actor;
 import model.character.player.storage.Backpack;
 import model.treasure.Treasure;
+import model.treasure.TreasureFactory;
+import model.treasure.potion.AttackPotion;
+import model.treasure.potion.DefensePotion;
+import model.treasure.potion.HealthPotion;
+import model.treasure.potion.ManaPotion;
+import model.treasure.potion.Potion;
+import model.treasure.spell.Spell;
 import model.treasure.weapon.Weapon;
 
+import java.util.Random;
+
 public class Player extends Actor {
+    // initial stats
     private static final int PLAYER_STARTING_LEVEL = 1;
-    private static final int STARTING_PLAYER_HEALTH = 20;
-    private static final int STARTING_PLAYER_MANA = 10;
-    private static final int STARTING_PLAYER_DAMAGE = 5;
-    private static final int STARTING_PLAYER_DEFENSE = 3;
-    private static final int REWARD_XP = 10;
+    private static final int STARTING_PLAYER_HEALTH = 100;
+    private static final int STARTING_PLAYER_MANA = 100;
+    private static final int STARTING_PLAYER_DAMAGE = 50;
+    private static final int STARTING_PLAYER_DEFENSE = 30;
+    private static final int REWARD_XP = 25;
+
+    private static final int INITIAL_XP_BAR = 25;
+
+    // stats for levelUp
+    private static final int HEALTH_LEVEL_UP = 10;
+    private static final int MANA_LEVEL_UP = 10;
+    private static final int ATTACK_LEVEL_UP = 5;
+    private static final int DEFENSE_LEVEL_UP = 5;
+    private static final int XP_INCREASE = 50;
+
+    //10 health, 10 mana, 5 аttack и 5 deffense
 
     //TODO: Generate a Builder pattern
     //TODO: Creating a Backpack
@@ -20,6 +41,11 @@ public class Player extends Actor {
 
     private final Backpack backpack;
     private Weapon equipedWeapon;
+
+    private int xpBar;
+    private int neededXp;
+
+    private Random random;
 
     //TODO: Change the names of the parameters for the player location
     public Player(int playerId, int x, int y) {
@@ -32,6 +58,11 @@ public class Player extends Actor {
 
         this.backpack = new Backpack();
         equipedWeapon = null;
+
+        xpBar = 0;
+        neededXp = INITIAL_XP_BAR;
+
+        random = new Random();
     }
 
     @Override
@@ -43,6 +74,90 @@ public class Player extends Actor {
         }
 
         return totalAttackDmg;
+    }
+
+    public void addXp(int xpReward) {
+        xpBar += xpReward;
+        if(xpBar >= neededXp){
+            levelUp();
+        }
+    }
+
+    public boolean hasLeveledUp() {
+        return (xpBar == 0) && (currentLevel != PLAYER_STARTING_LEVEL);
+    }
+
+    public void levelUp() {
+        totalHealth = totalHealth + HEALTH_LEVEL_UP;
+        totalMana = totalMana + MANA_LEVEL_UP;
+        damage += ATTACK_LEVEL_UP;
+        defense += DEFENSE_LEVEL_UP;
+
+        currentLevel++;
+
+        xpBar = 0;
+        neededXp += XP_INCREASE;
+    }
+
+    public void drinkPotion(Potion potion) {
+        switch (potion.getTreasureName()) {
+            case TreasureFactory.ATTACK_POTION -> super.damage += AttackPotion.ATTACK_POINTS;
+            case TreasureFactory.HEALTH_POTION -> {
+                currentHealth += HealthPotion.HEALTH_POINTS;
+                if(currentHealth > totalHealth) {
+                    currentHealth = totalHealth;
+                }
+            }
+            case TreasureFactory.MANA_POTION -> {
+                currentMana += ManaPotion.MANA_POINTS;
+                if(currentMana >= totalMana) {
+                    currentMana = totalMana;
+                }
+            }
+            case TreasureFactory.DEFENSE_POTION -> super.defense += DefensePotion.DEFENSE_POINTS;
+        }
+    }
+
+    public boolean canPerformSpell(Spell spell) {
+        return currentMana >= spell.getManaCost() && currentLevel >= spell.getLevelReq();
+    }
+
+    public void castSpell(Spell spell) {
+        currentMana -= spell.getManaCost();
+        if(currentMana < 0) {
+            currentMana = 0;
+        }
+    }
+
+    public String removeRandomTreasure() {
+        // select item
+        int randomItem = random.nextInt(0, backpack.getItemCountBackpack());
+        Treasure selectedTreasure = backpack.getAllTreasure().get(randomItem);
+
+        // if the selected item is indeed the equipped weapon, we remove it
+        if(selectedTreasure.equals(equipedWeapon)) {
+            removeWeapon();
+        }
+
+        removeTreasure(selectedTreasure);
+
+        return selectedTreasure.getTreasureName();
+    }
+
+    public void revive() {
+        totalHealth = STARTING_PLAYER_HEALTH;
+        currentHealth = totalHealth;
+
+        totalMana = STARTING_PLAYER_MANA;
+        currentMana = totalMana;
+
+        damage = STARTING_PLAYER_DAMAGE;
+        defense = STARTING_PLAYER_DEFENSE;
+        currentLevel = PLAYER_STARTING_LEVEL;
+
+        xpBar = 0;
+        neededXp = INITIAL_XP_BAR;
+
     }
 
     public void addTreasure(Treasure treasure) {
@@ -73,6 +188,10 @@ public class Player extends Actor {
         this.equipedWeapon = weapon;
     }
 
+    public void removeWeapon() {
+        this.equipedWeapon = null;
+    }
+
     public Backpack getBackpack() {
         return backpack;
     }
@@ -81,9 +200,17 @@ public class Player extends Actor {
     public String toString() {
         StringBuilder playerStats = new StringBuilder();
 
-        playerStats.append("HP: ").append(super.getHealth()).append(", Mana: ").append(super.getMana()).append(", ");
-        playerStats.append("Dmg: ").append(super.getDamage()).append(", Def: ")
-                .append(super.getDefense()).append(", Lvl: ").append(super.getCurrentLevel());
+        playerStats.append("HP: ").append(super.getCurrentHealth()).append("/").append(super.getTotalHealth()).append(", ");
+        playerStats.append("Mana: ").append(super.getCurrentMana()).append("/").append(super.getTotalMana()).append(", ");
+        playerStats.append("Dmg: ").append(super.getDamage()).append(", ");
+        playerStats.append("Def: ").append(super.getDefense()).append(", ");
+        playerStats.append("Lvl: ").append(super.getCurrentLevel()).append(", ");
+        playerStats.append("Xp: ").append(xpBar).append("/").append(neededXp);
+
+        if(getEquipedWeapon() != null){
+            playerStats.append(", Weapon: ").append(getEquipedWeapon().toString());
+        }
+
         playerStats.append("\n");
 
         return playerStats.toString();

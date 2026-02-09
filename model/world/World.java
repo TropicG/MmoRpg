@@ -6,6 +6,8 @@ import model.character.enemy.MinionFactory;
 import model.character.position.Position;
 import model.character.player.Player;
 import model.treasure.Treasure;
+import model.treasure.potion.Potion;
+import model.treasure.spell.Spell;
 import model.treasure.weapon.Weapon;
 import model.world.direction.Direction;
 import model.world.manager.MinionManager;
@@ -16,7 +18,6 @@ import model.world.manager.TreasureManager;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Set;
 
 public class World {
@@ -49,6 +50,7 @@ public class World {
 
     // monitoring object
     private final Object mapChangeMonitor = new Object();
+    private final Object treasureChangeMonitor = new Object();
 
     // Functions for initializing the World
     private World() {
@@ -62,8 +64,8 @@ public class World {
                     worldMap[i][j] = BLOCKAGE_SPACE;
                 } else if (canPlaceTreasure()) {
                     worldMap[i][j] = TREASURE_SPACE;
-                } else if(canPlaceMinion()) {
-                    minionManager.addMinionToWorld(Position.of(i,j), MinionFactory.ofOrc(i,j));
+                } else if (canPlaceMinion()) {
+                    minionManager.addMinionToWorld(Position.of(i, j), MinionFactory.ofOrc(i, j));
                     worldMap[i][j] = MINION_SPACE;
                 } else {
                     worldMap[i][j] = EMPTY_SPACE;
@@ -102,7 +104,7 @@ public class World {
 
     // THESE FUNCTIONS ARE RESPONSIBLE FOR EQUIPPING A WEAPON TO THE PLAYER
     public void equipWeaponToPlayer(int playerId, Weapon weapon) {
-        if(weapon == null) {
+        if (weapon == null) {
             informPlayer(playerId, "This is not a weapon\n");
             return;
         }
@@ -121,34 +123,91 @@ public class World {
         }
     }
 
+    // THESE FUNCTIONS ARE RESPONSIBLE FOR CASTING A SPELL
+    public void castSpellMinion(int playerId, Spell spell) {
+
+        if (spell == null) {
+            informPlayer(playerId, "No such spell\n");
+            return;
+        }
+
+        synchronized (mapChangeMonitor) {
+            Player player = playerModelManager.getPlayer(playerId);
+
+            if (!isThereMinion(player.getXPos(), player.getYPos())) {
+                informPlayer(playerId, "No minion on sight\n");
+            } else if (!player.hasTreasure(spell)) {
+                informPlayer(playerId, "No such spell learned\n");
+            } else if (!player.canPerformSpell(spell)) {
+                informPlayer(playerId, "Spell cannot be performed \n");
+            } else {
+                Minion minion = minionManager.getMinion(Position.of(player.getXPos(), player.getYPos()));
+                minion.takeDamage(player.calculateAtkDmg());
+
+                player.castSpell(spell);
+                player.removeTreasure(spell);
+
+                if (minion.isDead()) {
+                    minionHasDied(playerId, player, minion);
+                    return;
+                }
+                // show the details to the player after damage
+                informPlayer(playerId, "Enemy stats " + minion);
+                showPlayerStats(playerId);
+            }
+        }
+    }
+
     // THESE FUNCTIONS ARE RESPONSIBLE FOR ATTACKING A MINION
     public void attackMinion(int playerId) {
-        synchronized (mapChangeMonitor) {
 
-            Player player = playerModelManager.getPlayer(playerId);
-            if(!isThereMinion(player.getXPos(), player.getYPos())) {
-                informPlayer(playerId, "You are not on minion block\n");
-                return;
-            }
-
-            Minion minion = minionManager.getMinion(Position.of(player.getXPos(), player.getYPos()));
-            minion.takeDamage(player.calculateAtkDmg());
-            informPlayer(playerId, "Attack landed\n");
-            if(minion.isDead()) {
-                informPlayer(playerId, "You killed the minion\n");
-                removeMinionFromMap(player.getXPos(), player.getYPos());
-                Position newMinionPosition = calculateBestPosition();
-
-                // adding the new minion to the map
-                minionManager.addMinionToWorld(newMinionPosition, MinionFactory.ofOrc(newMinionPosition.getX(), newMinionPosition.getY()));
-                addMinionOnMap(newMinionPosition.getX(), newMinionPosition.getY());
-                sendMapToAll();
-                return;
-            }
-
-            //TODO: FINISH PLAYER TAKING DAMAGE
-            //player.takeDamage(minion.getDamage());
+        Player player = playerModelManager.getPlayer(playerId);
+        if (!isThereMinion(player.getXPos(), player.getYPos())) {
+            informPlayer(playerId, "You are not on minion block\n");
+            return;
         }
+
+        Minion minion = minionManager.getMinion(Position.of(player.getXPos(), player.getYPos()));
+
+        synchronized (mapChangeMonitor) {
+            minion.takeDamage(player.calculateAtkDmg());
+
+            if (minion.isDead()) {
+                minionHasDied(playerId, player, minion);
+                return;
+            }
+
+            // show the details to the player after damage
+            informPlayer(playerId, "Enemy stats " + minion);
+            player.takeDamage(minion.calculateAtkDmg());
+            if (player.isDead()) {
+                informPlayer(playerId, "You have died, respawned on same spot on Lvl 1\n");
+                String droppedTreasureName = player.removeRandomTreasure();
+
+                informPlayer(playerId, "DroppedItem: " + droppedTreasureName + "\n");
+                player.revive();
+            }
+            showPlayerStats(playerId);
+        }
+    }
+
+    private void minionHasDied(int playerId, Player player, Minion minion) {
+        informPlayer(playerId, "You killed the minion\n");
+
+        player.addXp(minion.getXpReward());
+        if (player.hasLeveledUp()) {
+            informPlayer(playerId, "You have leveled up!\n");
+            showPlayerStats(playerId);
+        }
+
+        // removing the minion from the map and calculates new place to spawn
+        removeMinionFromMap(player.getXPos(), player.getYPos());
+        Position newMinionPosition = calculateBestPosition();
+
+        // adding the new minion to the map
+        minionManager.addMinionToWorld(newMinionPosition, MinionFactory.ofOrc(newMinionPosition.getX(), newMinionPosition.getY()));
+        addMinionOnMap(newMinionPosition.getX(), newMinionPosition.getY());
+        sendMapToAll();
     }
 
     private boolean areOnSamePosition(Actor player, Actor minion) {
@@ -193,15 +252,10 @@ public class World {
             case RIGHT -> newY += 1;
         }
 
-        boolean hasChangeOccurred = false;
-
         // thread-safe: only one player connection can change the map at a time
         synchronized (mapChangeMonitor) {
             boolean isValidPosition = isValidPlayerPosition(newX, newY);
             if (isValidPosition) {
-
-                hasChangeOccurred = true;
-
                 //TODO: A player cannot take a * if the backpack is full
                 //TODO: Another player can take the * if the other player on tie has its backpack full
 
@@ -218,15 +272,19 @@ public class World {
                     }
                 }
 
+                // if there is a minion inform the player about the strength it
+                if (isThereMinion(newX, newY)) {
+                    Minion minion = minionManager.getMinion(Position.of(newX, newY));
+                    informPlayer(playerId, minion.toString());
+                }
+
                 // changes the current tile the player is on, either leave it * or check if there is another player on the tile
                 updateCurrentLoc(String.valueOf(playerId), player.getXPos(), player.getYPos());
                 playerModelManager.updatePlayerPosition(playerId, newX, newY); // updating the player new location
                 changePlayerLocation(playerId, player, newX, newY); // actual change of the player location
-            }
-        }
 
-        if (hasChangeOccurred) {
-            sendMapToAll();
+                sendMapToAll();
+            }
         }
     }
 
@@ -319,7 +377,7 @@ public class World {
             // to the player
             removeTreasureFromMap(newX, newY);
             worldMap[newX][newY] = worldMap[newX][newY] + playerid;
-        } else if (hasTileAnotherPlayer(newX, newY) || (isThereTreasure(newX, newY) && player.isBackpackFull()) || isThereMinion(newX, newY) ) {
+        } else if (hasTileAnotherPlayer(newX, newY) || (isThereTreasure(newX, newY) && player.isBackpackFull()) || isThereMinion(newX, newY)) {
             // if there was another player here, the tile will hold the two players
             // otherwise if there is a treasure and the player cannot take it, on the tile it will combine them
             worldMap[newX][newY] = worldMap[newX][newY] + playerid;
@@ -345,30 +403,44 @@ public class World {
         return playerId;
     }
 
+    // THESE FUNCTIONS ARE USED FOR POTION DRINKING
+    public void playerDrinkPotion(int playerId, Potion potion) {
+        synchronized (treasureChangeMonitor) {
+            Player player = playerModelManager.getPlayer(playerId);
+            if (potion == null || !player.hasTreasure(potion)) {
+                informPlayer(playerId, "No such potion\n");
+            } else {
+                player.drinkPotion(potion);
+                player.removeTreasure(potion);
+            }
+        }
+    }
+
     // THESE FUNCTIONS ARE RESPONSIBLE FOR TRADING BETWEEN PLAYERS
     public void giveTreasureToPlayer(int fromPlayerId, int toPlayerId, Treasure treasure) {
-
         if (treasure == null) {
             informPlayer(fromPlayerId, "No such item\n");
         }
 
         synchronized (mapChangeMonitor) {
-            Player fromPlayer = playerModelManager.getPlayer(fromPlayerId);
-            Player toPlayer = playerModelManager.getPlayer(toPlayerId);
+            synchronized (treasureChangeMonitor) {
+                Player fromPlayer = playerModelManager.getPlayer(fromPlayerId);
+                Player toPlayer = playerModelManager.getPlayer(toPlayerId);
 
-            if (!arePlayerOnSameLocation(fromPlayer, toPlayer)) {
-                informPlayer(fromPlayerId, "You are not on the same location\n");
-            } else if (!fromPlayer.hasTreasure(treasure)) {
-                informPlayer(fromPlayerId, "You do not have this treasure\n");
-            } else if (toPlayer.isBackpackFull()) {
-                informPlayer(toPlayerId, "Your backpack is full");
-                informPlayer(fromPlayerId, "Player " + toPlayerId + " backpack is full\n");
-            } else {
-                fromPlayer.removeTreasure(treasure);
-                informPlayer(fromPlayerId, "You gave " + treasure.getTreasureName() + " \n");
+                if (!arePlayerOnSameLocation(fromPlayer, toPlayer)) {
+                    informPlayer(fromPlayerId, "You are not on the same location\n");
+                } else if (!fromPlayer.hasTreasure(treasure)) {
+                    informPlayer(fromPlayerId, "You do not have this treasure\n");
+                } else if (toPlayer.isBackpackFull()) {
+                    informPlayer(toPlayerId, "Your backpack is full");
+                    informPlayer(fromPlayerId, "Player " + toPlayerId + " backpack is full\n");
+                } else {
+                    fromPlayer.removeTreasure(treasure);
+                    informPlayer(fromPlayerId, "You gave " + treasure.getTreasureName() + " \n");
 
-                toPlayer.addTreasure(treasure);
-                informPlayer(toPlayerId, "You received " + treasure.getTreasureName() + " from " + fromPlayerId + "  \n");
+                    toPlayer.addTreasure(treasure);
+                    informPlayer(toPlayerId, "You received " + treasure.getTreasureName() + " from " + fromPlayerId + "  \n");
+                }
             }
         }
     }
@@ -405,7 +477,7 @@ public class World {
                 }
             }
         }
-        return Position.of(0,0);
+        return Position.of(0, 0);
     }
 
     // THESE FUNCTIONS are responsible to show this person's stats
