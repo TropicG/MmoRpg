@@ -31,8 +31,8 @@ public class Backpack {
     }
 
     public boolean hasTreasure(Treasure treasure) {
-        for(Treasure backpackTreasure : allTreasure) {
-            if(treasure.equals(backpackTreasure)) {
+        for (Treasure backpackTreasure : allTreasure) {
+            if (treasure.equals(backpackTreasure)) {
                 return true;
             }
         }
@@ -51,7 +51,7 @@ public class Backpack {
     @Override
     public String toString() {
         StringBuilder allInventory = new StringBuilder();
-        for(Treasure treasure : allTreasure) {
+        for (Treasure treasure : allTreasure) {
             allInventory.append(treasure.toString());
         }
 

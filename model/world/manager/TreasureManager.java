@@ -4,6 +4,7 @@ import model.treasure.Treasure;
 import model.treasure.TreasureFactory;
 import model.treasure.spell.Spell;
 import model.treasure.weapon.Weapon;
+
 import java.util.Random;
 
 public class TreasureManager {

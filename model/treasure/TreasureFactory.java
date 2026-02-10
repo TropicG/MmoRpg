@@ -37,19 +37,19 @@ public class TreasureFactory {
 
         // if the treasure is weapon
         Weapon weapon = ofWeapon(treasureName);
-        if(weapon != null) {
+        if (weapon != null) {
             return weapon;
         }
 
         // if the treasureName is spell
         Spell spell = ofSpell(treasureName);
-        if(spell != null) {
+        if (spell != null) {
             return spell;
         }
 
         // if the treasureName is potion
         Potion potion = ofPotion(treasureName);
-        if(potion != null) {
+        if (potion != null) {
             return potion;
         }
 

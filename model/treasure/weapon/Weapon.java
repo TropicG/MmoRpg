@@ -6,7 +6,7 @@ public abstract class Weapon extends Treasure {
     private final int levelReq;
 
     public Weapon(int attackDmg, int levelReq, String weaponName) {
-        super(attackDmg,weaponName);
+        super(attackDmg, weaponName);
         this.levelReq = levelReq;
     }
 

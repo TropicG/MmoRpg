@@ -7,12 +7,9 @@ import model.treasure.spell.Spell;
 import model.treasure.weapon.Weapon;
 import model.world.World;
 import model.world.direction.Direction;
-import model.world.manager.TreasureManager;
 
 import java.io.IOException;
 
-//TODO: Create command executor as a SingleTon
-//TODO: This comamnd will be responsible for registering commands from the client
 public class CommandExecutor {
     // argument placement
     private static final int COMMAND_ARG = 0;
@@ -70,11 +67,13 @@ public class CommandExecutor {
     private static void executeAttack(int playerId, String targetName) {
         if(targetName.equals(World.MINION_SPACE)) {
             world.attackMinion(playerId);
+        } else {
+            int toPlayer = Integer.parseInt(targetName);
+            world.attackPlayer(playerId, toPlayer);
         }
     }
 
     private static void castSpell(int playerId, String targetName, String spellName) {
-
         Spell spell = TreasureFactory.ofSpell(spellName);
 
         if(targetName.equals(World.MINION_SPACE)) {

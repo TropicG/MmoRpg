@@ -1,6 +1,7 @@
 package client;
 
 import java.io.BufferedReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -14,29 +15,32 @@ public class PlayerClient {
     private static int SERVER_PORT = 8080;
     private static String SERVER_IP = "localhost";
 
+    private static final boolean isConnectionActive = true;
+
     public static void main(String[] args) {
 
-        try(Socket socket = new Socket(SERVER_IP, SERVER_PORT);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            Scanner sIn = new Scanner(System.in);
-            ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
+        try (Socket socket = new Socket(SERVER_IP, SERVER_PORT);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             Scanner sIn = new Scanner(System.in);
+             ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
 
             // executes a thread which job is going to be responsible for listening for the World input
             WorldMapListener worldMapListener = new WorldMapListener(in);
             executorService.execute(worldMapListener);
 
-            while(true) {
+            while (isConnectionActive) {
                 String inputLine;
                 inputLine = sIn.nextLine();
                 out.println(inputLine);
             }
 
         } catch (IOException e) {
-            System.out.println("Problem with connecting the client with the server");
-            //TODO: Generate a file containing error logs for the error
+            try (FileWriter fileWriter = new FileWriter("errorPlayerCantConnectLogs.txt")) {
+                fileWriter.write("Problem with connecting the client with the server");
+            } catch (IOException ioException) {
+                System.out.println("Problems with opening a file");
+            }
         }
-
     }
-
 }

@@ -7,7 +7,7 @@ public class Spell extends Treasure {
     private final int manaCost;
 
     public Spell(int attackDmg, int levelReq, int manaCost, String weaponName) {
-        super(attackDmg,weaponName);
+        super(attackDmg, weaponName);
         this.levelReq = levelReq;
         this.manaCost = manaCost;
     }
@@ -26,6 +26,7 @@ public class Spell extends Treasure {
 
     @Override
     public String toString() {
-        return "Name: " + super.treasureName + ", atkDmg: " + super.amplifierPoints + ", manaCost: " + manaCost + ", lvlReq: " + levelReq + "\n";
+        return "Name: " + super.treasureName + ", atkDmg: " + super.amplifierPoints
+                + ", manaCost: " + manaCost + ", lvlReq: " + levelReq + "\n";
     }
 }

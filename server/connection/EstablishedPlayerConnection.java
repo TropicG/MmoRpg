@@ -32,9 +32,7 @@ public class EstablishedPlayerConnection implements Runnable {
             }
 
         } catch (IOException e) {
-            System.out.println("Problems when communicating with the clinet");
-            System.out.println(e.getMessage());
-            //TODO: Save this information in a file
+            System.out.println("Problems when communicating with the client");
         }
     }
 }

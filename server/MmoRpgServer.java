@@ -6,6 +6,7 @@ import server.connection.EstablishedPlayerConnection;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,7 +29,6 @@ public class MmoRpgServer {
 
         } catch (IOException ioException) {
             System.out.println("PROBLEMS WITH THE SERVER");
-            //TODO: Save to this current computer why there are problems with the server
         }
     }
 
@@ -36,14 +36,15 @@ public class MmoRpgServer {
         Socket playerSocket;
         try {
             playerSocket = serverSocket.accept();
-            if (playerSocket != null) {
+            if (playerSocket != null && connectedPlayers < MAX_ACTIVE_CLIENTS) {
                 connectedPlayers++;
                 runThreadForPlayConnection(playerSocket, executor);
                 worldAcceptNewPlayer(playerSocket);
+            } else if(playerSocket != null){
+                playerSocket.getOutputStream().write("Server is full\n".getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
             System.out.println("PROBLEMS WHEN ACCEPTING A PLAYER IN THE SERVER");
-            //TODO: Inform the player with log files that something happened to his computer
         }
     }
 

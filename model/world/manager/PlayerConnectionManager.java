@@ -1,14 +1,14 @@
 package model.world.manager;
 
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerConnectionManager {
     private final Map<Integer, Socket> activePlayersConnections;
 
     public PlayerConnectionManager() {
-        this.activePlayersConnections = new HashMap<>();
+        this.activePlayersConnections = new ConcurrentHashMap<>();
     }
 
     public void addNewPlayerConnection(Integer id, Socket socketForPlayer) {

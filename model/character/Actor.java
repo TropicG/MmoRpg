@@ -17,7 +17,6 @@ public abstract class Actor {
     protected int xPos;
     protected int yPos;
 
-    //TODO: Change the names of the parameters for player location
     public Actor(int health, int mana, int damage, int defense, int currentLevel, int xPos, int yPos, int xpReward) {
         this.totalHealth = health;
         this.currentHealth = health;
@@ -41,7 +40,7 @@ public abstract class Actor {
     public void takeDamage(int dmgPoints) {
 
         int trueDamage = dmgPoints - defense;
-        if(trueDamage < 0) {
+        if (trueDamage < 0) {
             trueDamage = 0;
         }
 
@@ -49,7 +48,7 @@ public abstract class Actor {
 
         System.out.println(dmgPoints - defense);
 
-        if(currentHealth < 0) {
+        if (currentHealth < 0) {
             currentHealth = 0;
         }
     }

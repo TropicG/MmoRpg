@@ -16,28 +16,21 @@ import java.util.Random;
 
 public class Player extends Actor {
     // initial stats
-    private static final int PLAYER_STARTING_LEVEL = 1;
-    private static final int STARTING_PLAYER_HEALTH = 100;
-    private static final int STARTING_PLAYER_MANA = 100;
-    private static final int STARTING_PLAYER_DAMAGE = 50;
-    private static final int STARTING_PLAYER_DEFENSE = 30;
-    private static final int REWARD_XP = 25;
+    public static final int PLAYER_STARTING_LEVEL = 1;
+    public static final int STARTING_PLAYER_HEALTH = 100;
+    public static final int STARTING_PLAYER_MANA = 100;
+    public static final int STARTING_PLAYER_DAMAGE = 50;
+    public static final int STARTING_PLAYER_DEFENSE = 30;
+    public static final int REWARD_XP = 25;
 
-    private static final int INITIAL_XP_BAR = 25;
+    public static final int INITIAL_XP_BAR = 25;
 
     // stats for levelUp
-    private static final int HEALTH_LEVEL_UP = 10;
-    private static final int MANA_LEVEL_UP = 10;
-    private static final int ATTACK_LEVEL_UP = 5;
-    private static final int DEFENSE_LEVEL_UP = 5;
-    private static final int XP_INCREASE = 50;
-
-    //10 health, 10 mana, 5 аttack и 5 deffense
-
-    //TODO: Generate a Builder pattern
-    //TODO: Creating a Backpack
-    //TODO: Creating a Container for Spells
-    //TODO: Creating a Container for Potions
+    public static final int HEALTH_LEVEL_UP = 10;
+    public static final int MANA_LEVEL_UP = 10;
+    public static final int ATTACK_LEVEL_UP = 5;
+    public static final int DEFENSE_LEVEL_UP = 5;
+    public static final int XP_INCREASE = 50;
 
     private final Backpack backpack;
     private Weapon equipedWeapon;
@@ -47,14 +40,13 @@ public class Player extends Actor {
 
     private Random random;
 
-    //TODO: Change the names of the parameters for the player location
     public Player(int playerId, int x, int y) {
         super(STARTING_PLAYER_HEALTH,
                 STARTING_PLAYER_MANA,
                 STARTING_PLAYER_DAMAGE,
                 STARTING_PLAYER_DEFENSE,
                 PLAYER_STARTING_LEVEL,
-                x,y, REWARD_XP);
+                x, y, REWARD_XP);
 
         this.backpack = new Backpack();
         equipedWeapon = null;
@@ -69,7 +61,7 @@ public class Player extends Actor {
     public int calculateAtkDmg() {
         int totalAttackDmg = super.damage;
 
-        if(equipedWeapon != null) {
+        if (equipedWeapon != null) {
             totalAttackDmg += equipedWeapon.getAttackDmg();
         }
 
@@ -78,7 +70,7 @@ public class Player extends Actor {
 
     public void addXp(int xpReward) {
         xpBar += xpReward;
-        if(xpBar >= neededXp){
+        if (xpBar >= neededXp) {
             levelUp();
         }
     }
@@ -104,13 +96,13 @@ public class Player extends Actor {
             case TreasureFactory.ATTACK_POTION -> super.damage += AttackPotion.ATTACK_POINTS;
             case TreasureFactory.HEALTH_POTION -> {
                 currentHealth += HealthPotion.HEALTH_POINTS;
-                if(currentHealth > totalHealth) {
+                if (currentHealth > totalHealth) {
                     currentHealth = totalHealth;
                 }
             }
             case TreasureFactory.MANA_POTION -> {
                 currentMana += ManaPotion.MANA_POINTS;
-                if(currentMana >= totalMana) {
+                if (currentMana >= totalMana) {
                     currentMana = totalMana;
                 }
             }
@@ -124,7 +116,7 @@ public class Player extends Actor {
 
     public void castSpell(Spell spell) {
         currentMana -= spell.getManaCost();
-        if(currentMana < 0) {
+        if (currentMana < 0) {
             currentMana = 0;
         }
     }
@@ -135,7 +127,7 @@ public class Player extends Actor {
         Treasure selectedTreasure = backpack.getAllTreasure().get(randomItem);
 
         // if the selected item is indeed the equipped weapon, we remove it
-        if(selectedTreasure.equals(equipedWeapon)) {
+        if (selectedTreasure.equals(equipedWeapon)) {
             removeWeapon();
         }
 
@@ -164,7 +156,7 @@ public class Player extends Actor {
         backpack.addTreasure(treasure);
     }
 
-    public void removeTreasure(Treasure treasure){
+    public void removeTreasure(Treasure treasure) {
         backpack.removeTreasure(treasure);
     }
 
@@ -184,8 +176,13 @@ public class Player extends Actor {
         return equipedWeapon;
     }
 
-    public void equipWeapon(Weapon weapon) {
+    public boolean equipWeapon(Weapon weapon) {
+        if(currentLevel < weapon.getLevelReq()) {
+            return false;
+        }
+
         this.equipedWeapon = weapon;
+        return true;
     }
 
     public void removeWeapon() {
@@ -194,6 +191,14 @@ public class Player extends Actor {
 
     public Backpack getBackpack() {
         return backpack;
+    }
+
+    public int getXpNeeded() {
+        return neededXp;
+    }
+
+    public int getXp() {
+        return xpBar;
     }
 
     @Override
@@ -207,7 +212,7 @@ public class Player extends Actor {
         playerStats.append("Lvl: ").append(super.getCurrentLevel()).append(", ");
         playerStats.append("Xp: ").append(xpBar).append("/").append(neededXp);
 
-        if(getEquipedWeapon() != null){
+        if (getEquipedWeapon() != null) {
             playerStats.append(", Weapon: ").append(getEquipedWeapon().toString());
         }
 

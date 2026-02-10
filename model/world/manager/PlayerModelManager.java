@@ -3,18 +3,18 @@ package model.world.manager;
 import model.character.player.Player;
 import model.treasure.Treasure;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerModelManager {
     private final Map<Integer, Player> activePlayersModels;
 
     public PlayerModelManager() {
-        this.activePlayersModels = new HashMap<>();
+        this.activePlayersModels = new ConcurrentHashMap<>();
     }
 
     public void addNewPlayerModel(Integer id, Player newPlayer) {
-        activePlayersModels.put(id,newPlayer);
+        activePlayersModels.put(id, newPlayer);
     }
 
     public Player getPlayer(Integer id) {

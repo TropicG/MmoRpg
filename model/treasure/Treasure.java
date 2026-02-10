@@ -6,7 +6,7 @@ public abstract class Treasure {
     protected final int amplifierPoints;
     protected String treasureName;
 
-    protected Treasure(int amplifierPoints, String treasureName){
+    protected Treasure(int amplifierPoints, String treasureName) {
         this.amplifierPoints = amplifierPoints;
         this.treasureName = treasureName;
     }
@@ -23,11 +23,11 @@ public abstract class Treasure {
     @Override
     public boolean equals(Object obj) {
 
-        if(this == obj) {
+        if (this == obj) {
             return true;
         }
 
-        if(obj == null || this.getClass() != obj.getClass()) {
+        if (obj == null || this.getClass() != obj.getClass()) {
             return false;
         }
 
